@@ -42,6 +42,8 @@ export interface Decision {
   createdAt: string;
   updatedAt: string;
   supersedes?: string;
+  /** For decisions created by the change pipeline: which fields they settle. */
+  linked?: { kind: string; entityId: string; paths: string[]; changeId: string };
 }
 
 export class DecisionGuardError extends Error {

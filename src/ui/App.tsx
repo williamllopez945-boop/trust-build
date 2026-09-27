@@ -7,14 +7,17 @@ import { emptyIntake, type IntakeState } from "../intake/intake.ts";
 import { hasSavedVault, loadVault, saveVault } from "../storage/vault.ts";
 import { ruleSetsFor } from "../../rules/index.ts";
 import { Assets, Audit, Dashboard, Decisions, Designations, EstateMap, Flags, Funding, Packet, People } from "./views.tsx";
+import { Review } from "./review.tsx";
+import { GATE_LABEL, submitChange, type ChangeInput } from "../domain/changes.ts";
 
 const VIEWS = [
   ["dashboard", "Dashboard"],
   ["map", "Estate map"],
   ["people", "People & fiduciaries"],
   ["assets", "Assets"],
-  ["designations", "Beneficiary designations"],
+  ["designations", "Beneficiaries"],
   ["decisions", "Decision intake"],
+  ["review", "Review changes"],
   ["flags", "Review flags"],
   ["funding", "Funding tracker"],
   ["packet", "Attorney packet"],
@@ -28,8 +31,22 @@ export function App() {
   const [intake, setIntake] = useState<IntakeState>(emptyIntake);
   const [passphrase, setPassphrase] = useState("");
   const [vaultMsg, setVaultMsg] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const flags = useMemo(() => runRules(h, ruleSetsFor(h.plan.jurisdiction)), [h]);
-  const props = { h, flags, update: (fn: (x: Household) => Household) => setH(fn) };
+  const submit = (input: ChangeInput) => {
+    try {
+      const r = submitChange(h, input);
+      setH(r.household);
+      if (r.applied) setToast(`Recorded: ${r.change.label}.`);
+      else if (r.change.problems.length) setToast(`Not applied: ${r.change.problems.join(" ")} (see Review)`);
+      else setToast(`Sent to Review: "${r.change.label}" needs ${r.change.conflicts.length ? "a decision about conflicting confirmed information" : GATE_LABEL[r.change.gate]}.`);
+    } catch (e) {
+      setToast((e as Error).message);
+    }
+  };
+  const goto = (v: string) => setView(v as ViewId);
+  const props = { h, flags, update: (fn: (x: Household) => Household) => setH(fn), submit, goto };
+  const pendingCount = (h.pendingChanges ?? []).length;
 
   const unlock = async () => {
     try {
@@ -57,14 +74,16 @@ export function App() {
         <h1>FamilyVault</h1>
         <p>Local-first trust planning. Not legal advice.</p>
         {VIEWS.map(([id, label]) => (
-          <button key={id} aria-current={view === id ? "page" : undefined} onClick={() => setView(id)}>{label}</button>
+          <button key={id} aria-current={view === id ? "page" : undefined} onClick={() => { setView(id); setToast(null); }}>
+            {label}{id === "review" && pendingCount > 0 && <span className="badge">{pendingCount}</span>}
+          </button>
         ))}
         <div style={{ marginTop: 24 }} className="no-print">
           <div className="muted">Encrypted local vault</div>
           <input type="password" autoComplete="off" placeholder="Passphrase (12+ chars)" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} />
           <div className="row" style={{ marginTop: 6 }}>
             <button className="secondary" onClick={unlock} disabled={!hasSavedVault()}>Unlock</button>
-            <button className="primary" onClick={save}>Save</button>
+            <button className="primary" onClick={save}>Save to vault</button>
           </div>
           {vaultMsg && <p className="muted">{vaultMsg}</p>}
         </div>
@@ -76,12 +95,14 @@ export function App() {
             <div>This household is fictional. Real family data belongs only in a local, private copy, saved to the encrypted vault and never committed to Git.</div>
           </div>
         )}
+        {toast && <div className="toast" role="status"><span>{toast}</span><span className="row">{pendingCount > 0 && view !== "review" && <button className="link" onClick={() => goto("review")}>Review ({pendingCount})</button>}<button className="link" onClick={() => setToast(null)}>Dismiss</button></span></div>}
         {view === "dashboard" && <Dashboard {...props} />}
         {view === "map" && <EstateMap {...props} />}
         {view === "people" && <People {...props} />}
         {view === "assets" && <Assets {...props} />}
         {view === "designations" && <Designations {...props} />}
         {view === "decisions" && <Decisions {...props} intake={intake} setIntake={setIntake} />}
+        {view === "review" && <Review h={h} update={props.update} />}
         {view === "flags" && <Flags {...props} />}
         {view === "funding" && <Funding {...props} />}
         {view === "packet" && <Packet {...props} />}

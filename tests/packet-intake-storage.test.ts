@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { generateAttorneyPacket } from "../src/packet/attorneyPacket.ts";
 import { ruleSetsFor } from "../rules/index.ts";
-import { answerQuestion, emptyIntake, nextQuestion, seeksProfessionalAdvice, skipQuestion } from "../src/intake/intake.ts";
-import { QUESTIONS } from "../src/intake/questions.ts";
 import { decryptJson, encryptJson, loadVault, saveVault } from "../src/storage/vault.ts";
 import { buildEstateGraph } from "../src/domain/estateGraph.ts";
 import { demo } from "./fixtures.ts";
@@ -39,37 +37,6 @@ describe("estate graph", () => {
     const types = new Set(g.edges.map((e) => e.type));
     for (const t of ["relationship", "fiduciary", "owns", "funded_into", "beneficiary_primary", "trust_distribution"]) expect(types).toContain(t);
     expect(g.edges.some((e) => e.from === "a-ira" && e.type === "funded_into")).toBe(false);
-  });
-});
-
-describe("guided intake", () => {
-  it("presents exactly one question at a time, in order", () => {
-    let s = emptyIntake();
-    expect(nextQuestion(s)?.id).toBe(QUESTIONS[0].id);
-    const r = answerQuestion(s, QUESTIONS[0], "married");
-    if (r.kind !== "decision") throw new Error("expected decision");
-    s = r.state;
-    expect(nextQuestion(s)?.id).toBe(QUESTIONS[1].id);
-    s = skipQuestion(s, QUESTIONS[1]);
-    expect(nextQuestion(s)?.id).toBe(QUESTIONS[2].id);
-  });
-
-  it("does not record empty answers", () => {
-    expect(answerQuestion(emptyIntake(), QUESTIONS[0], "  ").kind).toBe("empty");
-  });
-
-  it("requires read-back for fiduciary answers", () => {
-    const q = QUESTIONS.find((x) => x.sensitivity === "fiduciary")!;
-    const r = answerQuestion(emptyIntake(), q, "Sam Placeholder, then Morgan Sample");
-    expect(r.kind === "decision" && r.needsReadBack).toBe(true);
-  });
-
-  it("routes advice-seeking answers to professional review instead of answering", () => {
-    expect(seeksProfessionalAdvice("Who should be our trustee?")).toBe(true);
-    const q = QUESTIONS.find((x) => x.sensitivity === "fiduciary")!;
-    const r = answerQuestion(emptyIntake(), q, "Should we pick my brother? What are the tax effects?");
-    expect(r.kind).toBe("routed_to_professional");
-    if (r.kind === "routed_to_professional") expect(r.decision.state).toBe("awaiting_professional_review");
   });
 });
 

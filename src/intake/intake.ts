@@ -1,13 +1,16 @@
 /**
  * Guided intake with guardrails:
  *  - exactly one question is presented at a time
- *  - answers are only ever the user's own words (never generated)
- *  - sensitive answers produce a read-back that must be confirmed
- *  - questions asking for legal/tax advice are routed to professional review
- *  - only structured decisions are retained; raw input is discarded
+ *  - answers are structured selections or the user's own words, never generated
+ *  - answers become *proposed* graph changes in the review queue; nothing is
+ *    applied or confirmed automatically
+ *  - free text that asks for legal/tax advice is routed to professional review
+ *  - raw input is discarded once mapped; provenance is kept on each change
  */
-import { proposeDecision, type Decision } from "../domain/decisions.ts";
-import type { AuditEntry } from "../domain/audit.ts";
+import { proposeDecision } from "../domain/decisions.ts";
+import { proposeChange, queueChange, type ChangeSet } from "../domain/changes.ts";
+import type { Household } from "../domain/types.ts";
+import { mapIntakeAnswer, type IntakeAnswer } from "./mapping.ts";
 import { QUESTIONS, type IntakeQuestion } from "./questions.ts";
 
 export interface IntakeState {
@@ -36,32 +39,37 @@ export function seeksProfessionalAdvice(text: string): boolean {
 }
 
 export type AnswerOutcome =
-  | { kind: "decision"; decision: Decision; audit: AuditEntry[]; state: IntakeState; needsReadBack: boolean }
-  | { kind: "routed_to_professional"; decision: Decision; audit: AuditEntry[]; state: IntakeState; message: string }
-  | { kind: "empty"; message: string };
+  | { kind: "proposed"; household: Household; changes: ChangeSet[]; state: IntakeState }
+  | { kind: "routed_to_professional"; household: Household; state: IntakeState; message: string }
+  | { kind: "nothing_to_change"; state: IntakeState; message: string };
 
-export function answerQuestion(state: IntakeState, question: IntakeQuestion, rawText: string, now: Date = new Date()): AnswerOutcome {
-  const text = rawText.trim();
-  if (!text) return { kind: "empty", message: "No answer given. You can skip this question and come back later." };
+/** Map an answer to proposed changes and queue them for review. */
+export function answerQuestion(h: Household, state: IntakeState, question: IntakeQuestion, answer: IntakeAnswer, now: Date = new Date()): AnswerOutcome {
   const nextState: IntakeState = { ...state, answeredIds: [...state.answeredIds, question.id] };
-  const id = `${question.id}.${now.getTime()}`;
-
-  if (question.sensitivity !== "legal_tax" && seeksProfessionalAdvice(text)) {
-    const { decision, audit } = proposeDecision(
-      { id, topic: `${question.prompt} (question for professional)`, sensitivity: "legal_tax", answer: text, answeredBy: "user" },
-      now,
-    );
-    return {
-      kind: "routed_to_professional",
-      decision,
-      audit,
-      state: nextState,
-      message: "This sounds like a request for legal or tax advice. It has been added to the attorney/CPA review list instead of being answered.",
-    };
+  let next = h;
+  const changes: ChangeSet[] = [];
+  for (const input of mapIntakeAnswer(h, question, answer, now)) {
+    const cs = proposeChange(next, input, now);
+    if (cs.op === "update" && cs.fields.length === 0) continue; // already recorded
+    changes.push(cs);
+    next = queueChange(next, cs, now);
   }
+  if (changes.length === 0) return { kind: "nothing_to_change", state: nextState, message: "No changes: your answer matches what is already recorded." };
+  return { kind: "proposed", household: next, changes, state: nextState };
+}
 
-  const { decision, audit } = proposeDecision({ id, topic: question.prompt, sensitivity: question.sensitivity, answer: text, answeredBy: "user" }, now);
-  return { kind: "decision", decision, audit, state: nextState, needsReadBack: Boolean(decision.readBack) };
+/** A free-text question for the attorney/CPA, captured instead of answered. */
+export function askProfessional(h: Household, state: IntakeState, question: IntakeQuestion, text: string, now: Date = new Date()): AnswerOutcome {
+  const { decision, audit } = proposeDecision(
+    { id: `${question.id}.q.${now.getTime()}`, topic: `${question.prompt} (question for professional)`, sensitivity: "legal_tax", answer: text.trim(), answeredBy: "user" },
+    now,
+  );
+  return {
+    kind: "routed_to_professional",
+    household: { ...h, decisions: [...h.decisions, decision], audit: [...h.audit, ...audit] },
+    state: { ...state, answeredIds: [...state.answeredIds, question.id] },
+    message: "Added to the attorney/CPA list. FamilyVault does not answer legal or tax questions.",
+  };
 }
 
 export function skipQuestion(state: IntakeState, question: IntakeQuestion): IntakeState {

@@ -58,6 +58,22 @@ const rules: Rule[] = [
     },
   },
   {
+    id: "common.pending_conflicts",
+    module: "decisions",
+    description: "Proposed changes that conflict with confirmed facts.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
+    evaluate(h) {
+      const conflicts = (h.pendingChanges ?? []).filter((c) => c.conflicts.length > 0);
+      return conflicts.map((c) => ({
+        severity: "review" as const,
+        reviewer: "family" as const,
+        title: `Conflicting information: ${c.label}`,
+        detail: "A new answer differs from information previously confirmed. Decide whether to keep the confirmed value or replace it; discuss with the attorney if unsure.",
+        subjectIds: [c.entityId],
+      }));
+    },
+  },
+  {
     id: "common.digital_assets",
     module: "funding",
     description: "Digital asset instructions.",

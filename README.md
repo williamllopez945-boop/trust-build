@@ -44,10 +44,11 @@ Other commands:
 | --- | --- |
 | Dashboard | Funding progress, flag counts, unresolved decisions |
 | Estate map | Typed graph of people, the trust, assets, and their relationships |
-| People & fiduciaries | Trustees, successors, guardians, agents, with alternates |
-| Assets | Split into **ownership-controlled** and **beneficiary-controlled** |
-| Beneficiary designations | Retirement/insurance designations and related flags |
-| Decision intake | One question at a time, read-back confirmation for sensitive choices |
+| People & fiduciaries | Add, edit, or archive people, relationships, trustees, guardians, and agents, plus household and plan details |
+| Assets | Add, edit, or archive assets, split into **ownership-controlled** and **beneficiary-controlled** |
+| Beneficiaries | Trust beneficiaries and shares; retirement and insurance designations with related flags |
+| Decision intake | One structured question at a time; answers become *proposed* changes |
+| Review changes | Every proposed change with its source, field diff, conflicts, and the confirmation it needs |
 | Review flags | Texas and general rules, as items for an attorney or CPA to review |
 | Funding tracker | Status of each asset: funded, review, outside, designation, missing |
 | Attorney packet | Markdown export; print to PDF |
@@ -92,8 +93,6 @@ fails if any listed term appears in a tracked file.
 - Rules are review prompts, not legal analysis. They cover common Texas
   planning issues, not every situation, and statutes change. The references on
   each flag are for the attorney to verify.
-- Intake answers are stored as decisions; they are not yet mapped automatically
-  into structured estate-graph fields (see [ROADMAP.md](ROADMAP.md)).
 - Browser storage can be cleared by the browser or the user. Keep an encrypted
   backup of your vault.
 - There is no multi-user sync, no document drafting, and no e-signing, by design.

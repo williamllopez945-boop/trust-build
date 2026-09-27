@@ -7,7 +7,7 @@
  */
 import { DATA_STATUSES, type Household } from "./types.ts";
 
-export const CURRENT_SCHEMA_VERSION = 1;
+export const CURRENT_SCHEMA_VERSION = 2;
 
 export class SchemaError extends Error {
   readonly problems: string[];
@@ -24,6 +24,8 @@ type Migration = (h: Record<string, unknown>) => Record<string, unknown>;
 const MIGRATIONS: Record<number, Migration> = {
   // v0: MVP data saved before schemaVersion existed. Same shape.
   0: (h) => ({ ...h, schemaVersion: 1 }),
+  // v1 -> v2: change pipeline adds a review queue and an archive.
+  1: (h) => ({ ...h, schemaVersion: 2, pendingChanges: h.pendingChanges ?? [], archived: h.archived ?? [] }),
 };
 
 const isObj = (x: unknown): x is Record<string, unknown> => typeof x === "object" && x !== null && !Array.isArray(x);
@@ -38,7 +40,7 @@ export function validateHousehold(h: Record<string, unknown>): string[] {
   const problems: string[] = [];
   for (const k of ["id", "label"]) if (typeof h[k] !== "string") problems.push(`${k}: expected string`);
   if (typeof h.isFictional !== "boolean") problems.push("isFictional: expected boolean");
-  for (const k of ["people", "relationships", "fiduciaries", "assets", "decisions", "audit"]) {
+  for (const k of ["people", "relationships", "fiduciaries", "assets", "decisions", "audit", "pendingChanges", "archived"]) {
     if (!Array.isArray(h[k])) problems.push(`${k}: expected array`);
   }
   checkTracked(h.maritalStatus, "maritalStatus", problems);

@@ -245,5 +245,9 @@ export interface Household {
   plan: TrustPlan;
   decisions: import("./decisions.ts").Decision[];
   audit: import("./audit.ts").AuditEntry[];
+  /** Proposed changes awaiting review/confirmation (schema v2+). */
+  pendingChanges?: import("./changes.ts").ChangeSet[];
+  /** Archived entities; nothing is hard-deleted (schema v2+). */
+  archived?: import("./entities.ts").ArchivedEntity[];
   lastAnnualReview?: ISODate;
 }

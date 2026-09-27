@@ -8,9 +8,15 @@
 - [x] Encrypted local vault
 - [x] Privacy scan, pre-commit hook, tests
 
+## Phase 2 (done)
+- [x] CI (privacy scan, typecheck, tests, build, audit) and Dependabot
+- [x] Rule metadata: references, dates, attorney-verification state
+- [x] Schema versioning with migrations and validation
+- [x] Change pipeline: create/edit/archive forms for people, relationships, fiduciaries, assets, designations, distributions, household, plan
+- [x] Intake answers mapped to proposed graph changes, with a review screen, provenance, and conflict detection
+- [x] Field-level audit detail (old/new, source, confirmation, review requirement, versions)
+
 ## Next
-- [ ] Editing forms for people, assets, fiduciaries, and distributions (today only funding status and decisions are editable in the UI)
-- [ ] Map confirmed intake decisions into structured graph fields
 - [ ] "Start a new household" flow for entering real data from scratch
 - [ ] Encrypted vault export/import file for backups
 - [ ] Annual review workflow with dated checklist and `lastAnnualReview`

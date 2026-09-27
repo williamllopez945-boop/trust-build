@@ -11,10 +11,13 @@ src/
     types.ts               Household aggregate, statuses, assets, fiduciaries, plan
     estateGraph.ts         Typed node/edge graph + queries
     decisions.ts           Sensitivity gates, read-back confirmation, professional review
+    changes.ts             Change pipeline: propose → review → apply, conflicts, provenance
+    entities.ts            Uniform entity access; archive instead of delete
+    schema.ts              Schema versioning, migrations, validation
     funding.ts             Funding methods/states, dashboard badges, progress
     rules.ts               Rule engine + non-conclusory wording guard
     audit.ts               Append-only audit entries
-  intake/                  One-question-at-a-time intake + guardrails
+  intake/                  One-question-at-a-time intake; mapping.ts turns answers into graph changes
   packet/                  Attorney review packet (Markdown)
   storage/vault.ts         AES-GCM + PBKDF2 encrypted local storage
   ui/                      React views
@@ -70,6 +73,45 @@ The guardrails live in `decisions.ts`, not only in the UI:
 - Only the user can confirm.
 - Blank answers are rejected, so the app never invents one.
 - Superseded decisions are kept.
+
+## Change pipeline
+
+Every edit goes through `src/domain/changes.ts`, whether it comes from a form,
+guided intake, the funding tracker, or an attorney's outcome. A form never
+writes to the household directly.
+
+1. **Propose.** `proposeChange` diffs the entity field by field, classifies
+   sensitivity (for example, a fiduciary is `fiduciary`, a distribution or a
+   designation is `dispositive`, trust structure is `legal_tax`, and title or
+   homestead is `important_fact`), and validates the change: references
+   exist, and `refLast4` holds at most 4 digits. Forms and intake cannot mark
+   anything `confirmed`.
+2. **Conflicts.** If a changed field was `confirmed`, the change is flagged
+   rather than overwritten. The user either keeps the confirmed value
+   (rejects the change) or explicitly replaces it with a read-back. Pending
+   conflicts also raise a review flag.
+3. **Review.** Factual changes with no conflicts are recorded immediately
+   (`submitChange`). Everything else waits in `pendingChanges` and appears
+   on the Review screen with provenance (source, intake question, actor,
+   confidence, time), the field diff, conflicts, and problems.
+4. **Apply.** `applyChange` requires the user; the assistant can neither
+   propose sensitive changes nor apply anything. It re-validates against
+   current data, enforces the gate (confirm, exact read-back, or
+   professional review), upgrades the statuses of changed fields
+   (`confirmed`, or `attorney_required` for legal/tax), links a Decision for
+   sensitive changes, and writes an audit entry.
+5. **Archive, never delete.** Archived entities move to `h.archived`.
+   Archiving a person who is still referenced is blocked.
+
+Each applied or rejected change records a `ChangeAuditDetail`: entity and ID,
+operation, field-level old and new values, source, how it was confirmed, the
+review requirement, the rules version, and the schema version.
+
+Intake answers are structured (choices, people pickers, shares, per-asset
+selects). `src/intake/mapping.ts` turns an answer into a batch of proposed
+changes. It updates existing entities in place, such as fiduciary slots and
+beneficiary shares, so conflicts are detected rather than duplicated. It never
+fills in values the user didn't give.
 
 ## Rule engine
 
