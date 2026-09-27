@@ -249,5 +249,7 @@ export interface Household {
   pendingChanges?: import("./changes.ts").ChangeSet[];
   /** Archived entities; nothing is hard-deleted (schema v2+). */
   archived?: import("./entities.ts").ArchivedEntity[];
+  /** Annual reviews, newest last (schema v3+). */
+  annualReviews?: import("./annualReview.ts").AnnualReview[];
   lastAnnualReview?: ISODate;
 }

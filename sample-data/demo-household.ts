@@ -168,6 +168,7 @@ export const demoHousehold: Household = {
   ],
   pendingChanges: [],
   archived: [],
+  annualReviews: [],
   audit: [
     { id: "au1", at: at("2026-01-10"), actor: "user", action: "decision.confirmed", subjectId: "d-trustees", summary: "Initial trustees" },
     { id: "au2", at: at("2026-01-10"), actor: "user", action: "decision.confirmed", subjectId: "d-successor", summary: "Primary successor trustee" },

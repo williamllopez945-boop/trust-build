@@ -13,7 +13,7 @@ describe("attorney review packet", () => {
       "Household summary", "Dependents", "Trustees and successors", "Guardians and alternates",
       "Trust beneficiaries and contingents", "Asset inventory", "Real property", "Retirement accounts and insurance",
       "Unresolved decisions", "Attorney-review flags", "Funding status and gaps", "Decision and change history",
-      "Confirmed facts", "Conflicts and pending changes", "Beneficiary-designation issues", "Rule sources",
+      "Confirmed facts", "Conflicts and pending changes", "Beneficiary-designation issues", "Rule sources", "Annual review history",
     ]) {
       expect(md).toContain(heading);
     }
@@ -33,7 +33,7 @@ describe("attorney review packet", () => {
   it("lists confirmed facts, funding gaps, and rule sources", () => {
     expect(md.split("## 10.")[1].split("## 11.")[0]).toContain("Sam Placeholder");
     expect(md.split("## 14.")[1].split("## 15.")[0]).toContain("Deed recording not verified");
-    expect(md.split("## 17.")[1]).toContain("Tex. Prop. Code §41.0021");
+    expect(md.split("## 18.")[1]).toContain("Tex. Prop. Code §41.0021");
   });
 
   it("lists only children of the grantors as dependents", () => {

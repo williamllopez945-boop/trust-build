@@ -54,9 +54,10 @@ describe("encrypted backups", () => {
   });
 
   it("migrates older household data inside a backup", async () => {
-    const { schemaVersion: _v, pendingChanges: _p, archived: _a, ...legacy } = demo();
+    const { schemaVersion: _v, pendingChanges: _p, archived: _a, annualReviews: _r, ...legacy } = demo();
     const r = await importBackup(await exportBackup({ household: legacy as never, intake: { answeredIds: [], skippedIds: [] } }, pass), pass);
-    expect(r.household.schemaVersion).toBe(2);
+    expect(r.household.schemaVersion).toBe(3);
+    expect(r.household.annualReviews).toEqual([]);
     expect(r.household.pendingChanges).toEqual([]);
   });
 

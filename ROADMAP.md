@@ -17,11 +17,11 @@
 - [x] Field-level audit detail (old/new, source, confirmation, review requirement, versions)
 
 ## Next
-- [ ] "Start a new household" flow for entering real data from scratch
+- [x] "Start a new household" flow for entering real data from scratch
 - [x] Encrypted backup export/import (`.fvault`) with validation and safe failure
 - [x] Funding engine: treatment, blockers, next action, not-applicable vs incomplete, last reviewed
 - [x] Attorney packet: confirmed facts, conflicts, designation issues, funding gaps, field-level history, rule sources, "software did not determine this" wording
-- [ ] Annual review workflow with dated checklist and `lastAnnualReview`
+- [x] Annual review workflow: dated checklist, life events, completion rules, history (schema v3)
 - [ ] Incapacity-planning view (agents, directives, definition of incapacity)
 - [ ] PDF export with page breaks and table of contents
 - [ ] Attorney review of every Texas rule (set `attorneyVerified` + `verifiedBy`)

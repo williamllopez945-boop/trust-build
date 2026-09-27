@@ -14,6 +14,8 @@ src/
     changes.ts             Change pipeline: propose → review → apply, conflicts, provenance
     entities.ts            Uniform entity access; archive instead of delete
     schema.ts              Schema versioning, migrations, validation
+    newHousehold.ts        New real household; grantors added through the change pipeline
+    annualReview.ts        Annual review checklist, life events, completion
     funding.ts             Funding methods/states, dashboard badges, progress
     rules.ts               Rule engine + non-conclusory wording guard
     audit.ts               Append-only audit entries
@@ -124,6 +126,18 @@ selects). `src/intake/mapping.ts` turns an answer into a batch of proposed
 changes. It updates existing entities in place, such as fiduciary slots and
 beneficiary shares, so conflicts are detected rather than duplicated. It never
 fills in values the user didn't give.
+
+## Annual review
+
+`startAnnualReview` builds a dated checklist from the household as it is when
+the review starts: each asset's title/funding or designation, each named
+fiduciary, each signed document, open flags, and pending changes. It adds
+fixed life-event questions. The review can only be completed when every item
+is done or marked "needs attention" with a note, and every life event is
+answered. Completion sets `lastAnnualReview` through the change pipeline, so
+it is audited. Life events answered "yes" become attorney-required flags, and
+needs-attention items become family follow-up flags. Review history is kept
+in `h.annualReviews` (schema v3) and appears in the attorney packet.
 
 ## Rule engine
 
