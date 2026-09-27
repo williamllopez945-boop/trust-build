@@ -17,7 +17,7 @@ export function Table({ headers, rows }: { headers: string[]; rows: React.ReactN
   return (
     <table>
       <thead>
-        <tr>{headers.map((h) => <th key={h}>{h}</th>)}</tr>
+        <tr>{headers.map((h, i) => <th key={i}>{h}</th>)}</tr>
       </thead>
       <tbody>
         {rows.map((r, i) => (

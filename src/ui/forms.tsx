@@ -6,11 +6,12 @@
 import { useState } from "react";
 import type { EntityKind } from "../domain/entities.ts";
 import type { Household } from "../domain/types.ts";
+import { DOCUMENT_KINDS, DOCUMENT_STAGES, kindInfo } from "../domain/documents.ts";
 
 type Obj = Record<string, unknown>;
 
 export type FieldType =
-  | "text" | "number" | "checkbox" | "select" | "person" | "people"
+  | "text" | "number" | "checkbox" | "select" | "person" | "people" | "asset" | "date"
   | "tracked-text" | "tracked-number" | "tracked-select" | "tracked-bool" | "tracked-people" | "designations";
 
 export interface FieldSpec {
@@ -18,7 +19,11 @@ export interface FieldSpec {
   label: string;
   type: FieldType;
   options?: string[];
+  /** Display labels for select options, when they differ from the stored value. */
+  optionLabels?: Record<string, string>;
   help?: string;
+  /** Show the field only when this returns true for the current draft. */
+  showIf?: (draft: Record<string, unknown>) => boolean;
 }
 
 const opts = (...xs: string[]) => xs;
@@ -54,7 +59,7 @@ export const FORM_SPECS: Record<EntityKind, FieldSpec[]> = {
     { path: "hasMortgage", label: "Has mortgage", type: "tracked-bool" },
     { path: "funding.method", label: "Funding method", type: "select", options: opts("deed", "retitle", "assignment", "beneficiary_designation", "leave_outside", "instructions", "undecided") },
     { path: "funding.deedRecorded", label: "Deed recorded", type: "tracked-bool" },
-    { path: "designations", label: "Beneficiary designations (retirement/insurance)", type: "designations" },
+    { path: "designations", label: "Beneficiary designations (retirement/insurance)", type: "designations", showIf: (d) => ["ira", "401k", "tsp", "life_insurance", "annuity", "hsa"].includes(String(d.category)) },
     { path: "notes", label: "Notes", type: "text" },
   ],
   distribution: [
@@ -62,6 +67,15 @@ export const FORM_SPECS: Record<EntityKind, FieldSpec[]> = {
     { path: "tier", label: "Tier", type: "select", options: opts("primary", "contingent") },
     { path: "sharePercent", label: "Share (%)", type: "tracked-number" },
     { path: "terms", label: "Terms (e.g. outright, or held until an age)", type: "tracked-text" },
+  ],
+  document: [
+    { path: "kind", label: "Document", type: "select", options: DOCUMENT_KINDS.map((k) => k.kind), optionLabels: Object.fromEntries(DOCUMENT_KINDS.map((k) => [k.kind, k.label])) },
+    { path: "forPersonId", label: "Whose document", type: "person", showIf: (d) => kindInfo(String(d.kind))?.scope === "person" },
+    { path: "forAssetId", label: "Property being deeded", type: "asset", showIf: (d) => kindInfo(String(d.kind))?.scope === "asset" },
+    { path: "stage", label: "Stage", type: "select", options: DOCUMENT_STAGES.map((s) => s.stage), optionLabels: Object.fromEntries(DOCUMENT_STAGES.map((s) => [s.stage, s.label])), help: "Record where things stand with your attorney. FamilyVault never drafts, finalizes, or signs documents." },
+    { path: "executedOn", label: "Date signed (YYYY-MM-DD)", type: "date", showIf: (d) => d.stage === "executed" },
+    { path: "storageReference", label: "Where the signed original is kept", type: "text", help: "A location only, e.g. \"attorney's vault\" or \"home safe, folder A\". Never upload the document or enter account numbers." },
+    { path: "notes", label: "Notes", type: "text" },
   ],
   household: [
     { path: "label", label: "Household label", type: "text" },
@@ -82,6 +96,7 @@ export const DEFAULTS: Partial<Record<EntityKind, Obj>> = {
   fiduciary: { personId: "", role: "successor_trustee", order: 1, status: "known" },
   asset: { label: "", category: "bank", titledTo: { value: [], status: "unknown" }, funding: { method: "undecided", state: "not_started" } },
   distribution: { beneficiaryId: "", tier: "primary", sharePercent: { value: null, status: "unknown" }, terms: { value: null, status: "unknown" } },
+  document: { kind: "trust_agreement", stage: "not_started" },
 };
 
 const EDITABLE_STATUSES = ["known", "unknown", "needs_review", "attorney_required"];
@@ -171,7 +186,14 @@ export function EntityForm({ h, kind, entity, isNew, onSubmit, onCancel }: {
       case "text": return <input value={String(v ?? "")} onChange={(e) => update(f.path, e.target.value || undefined)} />;
       case "number": return <input type="number" value={Number(v ?? 0)} onChange={(e) => update(f.path, Number(e.target.value))} />;
       case "checkbox": return <input type="checkbox" checked={Boolean(v)} onChange={(e) => update(f.path, e.target.checked)} style={{ width: "auto" }} />;
-      case "select": return <select value={String(v ?? "")} onChange={(e) => update(f.path, e.target.value)}>{f.options!.map((o) => <option key={o} value={o}>{o.replace(/_/g, " ")}</option>)}</select>;
+      case "select": return <select value={String(v ?? "")} onChange={(e) => update(f.path, e.target.value)}>{f.options!.map((o) => <option key={o} value={o}>{f.optionLabels?.[o] ?? o.replace(/_/g, " ")}</option>)}</select>;
+      case "asset": return (
+        <select value={String(v ?? "")} onChange={(e) => update(f.path, e.target.value || undefined)}>
+          <option value="">— choose —</option>
+          {h.assets.filter((a) => a.category === "real_estate").map((a) => <option key={a.id} value={a.id}>{a.label}</option>)}
+        </select>
+      );
+      case "date": return <input type="date" value={String(v ?? "")} onChange={(e) => update(f.path, e.target.value || undefined)} />;
       case "person": return <PersonSelect h={h} value={String(v ?? "")} onChange={(x) => update(f.path, x)} />;
       case "people": return <PeopleChecks h={h} value={(v as string[]) ?? []} onChange={(x) => update(f.path, x.length ? x : undefined)} />;
       case "tracked-text": return <Tracked current={v as Obj} onChange={(t) => update(f.path, t)}>{(val, set) => <input value={String(val ?? "")} onChange={(e) => set(e.target.value || null)} />}</Tracked>;
@@ -184,9 +206,15 @@ export function EntityForm({ h, kind, entity, isNew, onSubmit, onCancel }: {
   };
 
   return (
-    <form className="card form" onSubmit={(e) => { e.preventDefault(); onSubmit(draft); }}>
+    <form className="card form" onSubmit={(e) => {
+      e.preventDefault();
+      // Drop values of fields that are hidden for this draft (e.g. a deed's property after switching to a will).
+      let clean = draft;
+      for (const f of FORM_SPECS[kind]) if (f.showIf && !f.showIf(draft) && getPath(clean, f.path) !== undefined) clean = setPath(clean, f.path, undefined);
+      onSubmit(clean);
+    }}>
       <h3>{entity && !isNew ? "Edit" : "Add"} {kind}</h3>
-      {FORM_SPECS[kind].filter((f) => f.type !== "designations" || ["ira", "401k", "tsp", "life_insurance", "annuity", "hsa"].includes(String(draft.category))).map((f) => (
+      {FORM_SPECS[kind].filter((f) => !f.showIf || f.showIf(draft)).map((f) => (
         <label key={f.path} className="field">
           <span>{f.label}</span>
           {field(f)}

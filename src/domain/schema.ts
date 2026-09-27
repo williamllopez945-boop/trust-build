@@ -66,6 +66,13 @@ export function validateHousehold(h: Record<string, unknown>): string[] {
       if (typeof a.refLast4 === "string" && !/^\d{0,4}$/.test(a.refLast4)) problems.push(`assets[${i}].refLast4: at most 4 digits`);
     }
   }
+  if (isObj(h.plan)) {
+    for (const [i, d] of arr(h.plan.documents).entries()) {
+      if (!isObj(d) || typeof d.id !== "string" || typeof d.kind !== "string" || !["not_started", "drafting", "attorney_reviewed", "executed"].includes(String(d.stage))) {
+        problems.push(`plan.documents[${i}]: expected id, kind, and a valid stage`);
+      }
+    }
+  }
   for (const [i, f] of arr(h.fiduciaries).entries()) {
     if (!isObj(f) || !STATUSES.has(String(f.status))) problems.push(`fiduciaries[${i}]: invalid status`);
   }

@@ -22,6 +22,7 @@
 - [x] Funding engine: treatment, blockers, next action, not-applicable vs incomplete, last reviewed
 - [x] Attorney packet: confirmed facts, conflicts, designation issues, funding gaps, field-level history, rule sources, "software did not determine this" wording
 - [x] Annual review workflow: dated checklist, life events, completion rules, history (schema v3)
+- [x] Legal documents screen: stage, signing date, and storage location for each document, a household-specific checklist, and privacy checks on what is typed
 - [ ] Incapacity-planning view (agents, directives, definition of incapacity)
 - [ ] PDF export with page breaks and table of contents
 - [ ] Attorney review of every Texas rule (set `attorneyVerified` + `verifiedBy`)

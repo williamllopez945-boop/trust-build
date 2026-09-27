@@ -6,7 +6,7 @@ import { parseHousehold } from "../domain/schema.ts";
 import { emptyIntake, type IntakeState } from "../intake/intake.ts";
 import { hasSavedVault, loadVault, saveVault } from "../storage/vault.ts";
 import { ruleSetsFor } from "../../rules/index.ts";
-import { Assets, Audit, Dashboard, Decisions, Designations, EstateMap, Flags, Funding, Packet, People } from "./views.tsx";
+import { Assets, Audit, Dashboard, Decisions, Designations, Documents, EstateMap, Flags, Funding, Packet, People } from "./views.tsx";
 import { Review } from "./review.tsx";
 import { NewHouseholdSetup } from "./setup.tsx";
 import { AnnualReviewView } from "./annualReviewView.tsx";
@@ -20,6 +20,7 @@ const VIEWS = [
   ["people", "People & fiduciaries"],
   ["assets", "Assets"],
   ["designations", "Beneficiaries"],
+  ["documents", "Legal documents"],
   ["decisions", "Decision intake"],
   ["review", "Review changes"],
   ["flags", "Review flags"],
@@ -52,7 +53,7 @@ export function App() {
       const r = submitChange(h, input);
       setH(r.household);
       if (r.applied) setToast(`Recorded: ${r.change.label}.`);
-      else if (r.change.problems.length) setToast(`Not applied: ${r.change.problems.join(" ")} (see Review)`);
+      else if (r.change.problems.length) setToast(`Not saved: ${r.change.problems.join(" ")}`);
       else setToast(`Sent to Review: "${r.change.label}" needs ${r.change.conflicts.length ? "a decision about conflicting confirmed information" : GATE_LABEL[r.change.gate]}.`);
     } catch (e) {
       setToast((e as Error).message);
@@ -160,6 +161,7 @@ export function App() {
         {view === "people" && <People {...props} />}
         {view === "assets" && <Assets {...props} />}
         {view === "designations" && <Designations {...props} />}
+        {view === "documents" && <Documents {...props} />}
         {view === "decisions" && <Decisions {...props} intake={intake} setIntake={setIntake} />}
         {view === "review" && <Review h={h} update={props.update} />}
         {view === "flags" && <Flags {...props} />}

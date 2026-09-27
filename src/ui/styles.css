@@ -69,3 +69,7 @@ ul.tight { margin: 0; padding-left: 16px; }
 .s-done { color: var(--ok); }
 .s-open { color: var(--muted); }
 .s-needs_attention { color: var(--danger); }
+.pill.stage-not_started { color: var(--muted); }
+.pill.stage-drafting { color: var(--warn); }
+.pill.stage-attorney_reviewed { color: var(--info); }
+.pill.stage-executed { color: var(--ok); }
