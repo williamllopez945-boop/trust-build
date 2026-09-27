@@ -36,7 +36,7 @@ describe("factual changes", () => {
       fields: [{ path: "displayName", old: "Morgan Sample", new: "Morgan Sample-Renamed" }],
     });
     expect(entry.detail?.rulesVersion).toBeTruthy();
-    expect(entry.detail?.schemaVersion).toBe(2);
+    expect(entry.detail?.schemaVersion).toBe(3);
     expect(entry.detail?.source).toContain("form");
   });
 });

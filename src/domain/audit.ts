@@ -19,7 +19,9 @@ export type AuditAction =
   | "change.rejected"
   | "change.conflict_flagged"
   | "backup.exported"
-  | "backup.imported";
+  | "backup.imported"
+  | "household.created"
+  | "review.annual_started";
 
 /** Field-level detail recorded for every applied or rejected change. */
 export interface ChangeAuditDetail {

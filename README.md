@@ -51,6 +51,8 @@ Other commands:
 | Review changes | Every proposed change with its source, field diff, conflicts, and the confirmation it needs |
 | Review flags | Texas and general rules, as items for an attorney or CPA to review |
 | Funding tracker | Each asset's treatment, blocking reasons, next action, and last-reviewed date; progress excludes assets deliberately left outside |
+| Annual review | Dated checklist of assets, designations, fiduciaries, and documents, plus life-event questions; reported events become attorney flags |
+| Start new household | Guided setup for real data (private local copy only), with unsaved-changes protection |
 | Attorney packet | Markdown export (print to PDF): confirmed facts, unresolved decisions, conflicts, flags with rule sources, funding gaps, change history |
 | Audit log | Append-only record of decisions and changes |
 
@@ -58,7 +60,11 @@ The app opens on a **fictional demo household** ("The Example Family").
 
 ## Entering real data
 
-1. Run the app locally (`npm run dev`). Nothing is sent to a server.
+1. Run the app locally (`npm run dev`) from a **private** copy. Nothing is
+   sent to a server. Open **Start new household**, confirm the two privacy
+   acknowledgements, and enter the grantors. Nothing else is filled in for
+   you. While a real household has unsaved changes, the app shows a warning
+   and asks before you close the tab.
 2. Enter information and **Save** with a passphrase of 12+ characters. Data is
    encrypted with AES-GCM in this browser's storage.
 3. Use **Unlock** with the same passphrase to reload it. The passphrase is not

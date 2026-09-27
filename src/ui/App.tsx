@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { demoHousehold } from "../../sample-data/demo-household.ts";
 import { runRules } from "../domain/rules.ts";
 import type { Household } from "../domain/types.ts";
@@ -8,6 +8,8 @@ import { hasSavedVault, loadVault, saveVault } from "../storage/vault.ts";
 import { ruleSetsFor } from "../../rules/index.ts";
 import { Assets, Audit, Dashboard, Decisions, Designations, EstateMap, Flags, Funding, Packet, People } from "./views.tsx";
 import { Review } from "./review.tsx";
+import { NewHouseholdSetup } from "./setup.tsx";
+import { AnnualReviewView } from "./annualReviewView.tsx";
 import { GATE_LABEL, submitChange, type ChangeInput } from "../domain/changes.ts";
 import { auditEntry } from "../domain/audit.ts";
 import { BACKUP_EXTENSION, backupFileName, exportBackup, importBackup } from "../storage/backup.ts";
@@ -22,8 +24,10 @@ const VIEWS = [
   ["review", "Review changes"],
   ["flags", "Review flags"],
   ["funding", "Funding tracker"],
+  ["annual", "Annual review"],
   ["packet", "Attorney packet"],
   ["audit", "Audit log"],
+  ["setup", "Start new household"],
 ] as const;
 type ViewId = (typeof VIEWS)[number][0];
 
@@ -34,6 +38,14 @@ export function App() {
   const [passphrase, setPassphrase] = useState("");
   const [vaultMsg, setVaultMsg] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  // Tracks the last saved/loaded household so real data is never silently lost.
+  const saved = useRef<Household | null>(null);
+  const dirty = !h.isFictional && saved.current !== h;
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => { if (dirty) e.preventDefault(); };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const flags = useMemo(() => runRules(h, ruleSetsFor(h.plan.jurisdiction)), [h]);
   const submit = (input: ChangeInput) => {
     try {
@@ -54,7 +66,9 @@ export function App() {
     try {
       const loaded = await loadVault<{ household: unknown; intake: IntakeState }>(passphrase);
       if (!loaded) return setVaultMsg("No saved vault on this device yet.");
-      setH(parseHousehold(loaded.household));
+      const parsed = parseHousehold(loaded.household);
+      saved.current = parsed;
+      setH(parsed);
       setIntake(loaded.intake);
       setVaultMsg("Vault unlocked.");
     } catch (e) {
@@ -64,6 +78,7 @@ export function App() {
   const save = async () => {
     try {
       await saveVault({ household: h, intake }, passphrase);
+      saved.current = h;
       setVaultMsg("Saved (encrypted) to this browser.");
     } catch (e) {
       setVaultMsg((e as Error).message);
@@ -75,6 +90,7 @@ export function App() {
       const withAudit = { ...h, audit: [...h.audit, auditEntry("backup.exported", h.id, "Encrypted backup exported")] };
       const text = await exportBackup({ household: withAudit, intake }, passphrase);
       setH(withAudit);
+      saved.current = withAudit;
       const url = URL.createObjectURL(new Blob([text], { type: "application/octet-stream" }));
       const a = document.createElement("a");
       a.href = url;
@@ -91,7 +107,9 @@ export function App() {
     try {
       const r = await importBackup(await file.text(), passphrase);
       if (!window.confirm(`Replace the household on screen with "${r.household.label}" from this backup?`)) return;
-      setH({ ...r.household, audit: [...r.household.audit, auditEntry("backup.imported", r.household.id, `Imported encrypted backup (${file.name.endsWith(BACKUP_EXTENSION) ? "fvault" : "file"})`)] });
+      const imported = { ...r.household, audit: [...r.household.audit, auditEntry("backup.imported", r.household.id, `Imported encrypted backup (${file.name.endsWith(BACKUP_EXTENSION) ? "fvault" : "file"})`)] };
+      saved.current = null; // imported but not yet saved to this browser's vault
+      setH(imported);
       setIntake(r.intake);
       setVaultMsg("Backup imported.");
     } catch (e) {
@@ -125,6 +143,11 @@ export function App() {
         </div>
       </nav>
       <main>
+        {!h.isFictional && (
+          <div className={dirty ? "banner" : "toast"} role="status">
+            <span><strong>{h.label}</strong>: real household. {dirty ? "Unsaved changes: use Save to vault (encrypted) before closing this tab." : "All changes saved to the encrypted vault."}</span>
+          </div>
+        )}
         {h.isFictional && (
           <div className="banner" role="alert">
             <strong>DEMO DATA ONLY — DO NOT ENTER REAL PERSONAL OR ESTATE INFORMATION IN A PUBLIC BUILD</strong>
@@ -143,6 +166,15 @@ export function App() {
         {view === "funding" && <Funding {...props} />}
         {view === "packet" && <Packet {...props} />}
         {view === "audit" && <Audit {...props} />}
+        {view === "annual" && <AnnualReviewView h={h} flags={flags} update={props.update} />}
+        {view === "setup" && (
+          <NewHouseholdSetup
+            current={h}
+            dirty={dirty}
+            onCreate={(nh) => { saved.current = null; setH(nh); setIntake(emptyIntake()); setView("dashboard"); setToast("New household created. Add people, assets, and decisions, then Save to vault."); }}
+            onLoadDemo={() => { if (!dirty || window.confirm("Discard unsaved changes and load the fictional demo?")) { saved.current = null; setH(structuredClone(demoHousehold)); setIntake(emptyIntake()); setView("dashboard"); } }}
+          />
+        )}
       </main>
     </div>
   );

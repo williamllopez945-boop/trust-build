@@ -183,7 +183,17 @@ export function generateAttorneyPacket(h: Household, ruleSets: readonly Jurisdic
     e.detail ? `${e.detail.confirmation} (${e.detail.source})` : "—",
   ])));
 
-  out.push("## 17. Rule sources", "");
+  out.push("## 17. Annual review history", "");
+  const reviews = (h.annualReviews ?? []).filter((r) => r.completedAt);
+  out.push(table(["Completed", "Life events reported", "Items needing attention"], reviews.map((r) => [
+    r.completedAt!.slice(0, 10),
+    r.lifeEvents.filter((e) => e.answer).map((e) => `${e.question}${e.note ? ` (${e.note})` : ""}`).join("; ") || "none",
+    r.items.filter((i) => i.status === "needs_attention").map((i) => `${i.label}: ${i.note ?? ""}`).join("; ") || "none",
+  ])));
+  const inProgress = (h.annualReviews ?? []).find((r) => !r.completedAt);
+  if (inProgress) out.push(`_A review started ${inProgress.startedAt.slice(0, 10)} is still in progress._`, "");
+
+  out.push("## 18. Rule sources", "");
   out.push("_Rules that produced a flag above, with the references for the attorney to verify._", "");
   const seen = new Map<string, (typeof ruleSets)[number]["rules"][number]>();
   for (const set of ruleSets) for (const r of set.rules) if (flags.some((f) => f.ruleId === r.id)) seen.set(r.id, r);

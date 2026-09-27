@@ -2,6 +2,7 @@
 import { draftMeta, type JurisdictionRuleSet, type Rule } from "../../../src/domain/rules.ts";
 import { fiduciariesFor, minors } from "../../../src/domain/estateGraph.ts";
 import { controlFor } from "../../../src/domain/types.ts";
+import { lastCompletedReview } from "../../../src/domain/annualReview.ts";
 
 const rules: Rule[] = [
   {
@@ -92,6 +93,40 @@ const rules: Rule[] = [
     evaluate(h) {
       const open = h.assets.filter((a) => controlFor(a.category) === "ownership" && ["not_started", "in_progress", "review"].includes(a.funding.state));
       return open.length ? [{ severity: "info", reviewer: "family", title: `${open.length} asset(s) not yet funded or decided`, detail: "An unfunded asset stays outside the trust. See the funding tracker.", subjectIds: open.map((a) => a.id) }] : [];
+    },
+  },
+  {
+    id: "common.review_life_events",
+    module: "maintenance",
+    description: "Life events reported in the most recent annual review.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
+    evaluate(h) {
+      const r = lastCompletedReview(h);
+      if (!r) return [];
+      return r.lifeEvents.filter((e) => e.answer).map((e) => ({
+        severity: "attorney_required" as const,
+        reviewer: "attorney" as const,
+        title: `Life event reported: ${e.question.replace(/\?$/, "")}`,
+        detail: `Reported in the annual review on ${r.completedAt!.slice(0, 10)}${e.note ? ` ("${e.note}")` : ""}. Ask the attorney whether the plan, beneficiary designations, or fiduciaries should be updated.`,
+        subjectIds: [],
+      }));
+    },
+  },
+  {
+    id: "common.review_followups",
+    module: "maintenance",
+    description: "Checklist items marked as needing attention in the most recent annual review.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
+    evaluate(h) {
+      const r = lastCompletedReview(h);
+      if (!r) return [];
+      return r.items.filter((i) => i.status === "needs_attention").map((i) => ({
+        severity: "review" as const,
+        reviewer: "family" as const,
+        title: `Annual review follow-up: ${i.label}`,
+        detail: i.note ?? "Marked as needing attention.",
+        subjectIds: i.subjectId ? [i.subjectId] : [],
+      }));
     },
   },
   {
