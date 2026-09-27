@@ -21,12 +21,44 @@ export interface ReviewFlag {
   subjectIds: string[];
   /** Pointers for the professional to verify; not authority for a conclusion. */
   references?: string[];
+  /** Copied from the rule so every flag shows whether its rule is attorney-verified. */
+  ruleVerified?: boolean;
+  ruleLastReviewed?: string;
+}
+
+/**
+ * Provenance for a rule. Every rule starts as a draft written from general
+ * planning knowledge; `attorneyVerified` flips only after a licensed attorney
+ * reviews the rule's trigger and wording (record who and when in `verifiedBy`).
+ */
+export interface RuleMeta {
+  /** Sources for the professional to verify; never authority for a conclusion. */
+  references: string[];
+  /** Date the rule logic took effect in FamilyVault (YYYY-MM-DD). */
+  effectiveDate: string;
+  /** Date the rule was last reviewed against current law/practice. */
+  lastReviewed: string;
+  attorneyVerified: boolean;
+  verifiedBy?: string;
+}
+
+export const RULES_VERSION = "2026.09.1";
+
+/** Metadata for a rule that has NOT been verified by an attorney. */
+export function draftMeta(references: string[], dates: { effectiveDate?: string; lastReviewed?: string } = {}): RuleMeta {
+  return {
+    references,
+    effectiveDate: dates.effectiveDate ?? "2026-09-27",
+    lastReviewed: dates.lastReviewed ?? "2026-09-27",
+    attorneyVerified: false,
+  };
 }
 
 export interface Rule {
   id: string;
   module: string;
   description: string;
+  meta: RuleMeta;
   evaluate(h: Household): Omit<ReviewFlag, "ruleId" | "jurisdiction" | "module">[];
 }
 
@@ -68,7 +100,15 @@ export function runRules(h: Household, sets: readonly JurisdictionRuleSet[]): Re
   for (const set of sets) {
     for (const rule of set.rules) {
       for (const f of rule.evaluate(h)) {
-        const flag: ReviewFlag = { ...f, ruleId: rule.id, jurisdiction: set.jurisdiction, module: rule.module };
+        const flag: ReviewFlag = {
+          ...f,
+          references: f.references ?? (rule.meta.references.length ? rule.meta.references : undefined),
+          ruleId: rule.id,
+          jurisdiction: set.jurisdiction,
+          module: rule.module,
+          ruleVerified: rule.meta.attorneyVerified,
+          ruleLastReviewed: rule.meta.lastReviewed,
+        };
         assertNonConclusory(`${flag.title} ${flag.detail}`, rule.id);
         flags.push(flag);
       }

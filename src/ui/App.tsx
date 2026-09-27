@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { demoHousehold } from "../../sample-data/demo-household.ts";
 import { runRules } from "../domain/rules.ts";
 import type { Household } from "../domain/types.ts";
+import { parseHousehold } from "../domain/schema.ts";
 import { emptyIntake, type IntakeState } from "../intake/intake.ts";
 import { hasSavedVault, loadVault, saveVault } from "../storage/vault.ts";
 import { ruleSetsFor } from "../../rules/index.ts";
@@ -32,9 +33,9 @@ export function App() {
 
   const unlock = async () => {
     try {
-      const loaded = await loadVault<{ household: Household; intake: IntakeState }>(passphrase);
+      const loaded = await loadVault<{ household: unknown; intake: IntakeState }>(passphrase);
       if (!loaded) return setVaultMsg("No saved vault on this device yet.");
-      setH(loaded.household);
+      setH(parseHousehold(loaded.household));
       setIntake(loaded.intake);
       setVaultMsg("Vault unlocked.");
     } catch (e) {
@@ -69,7 +70,12 @@ export function App() {
         </div>
       </nav>
       <main>
-        {h.isFictional && <div className="banner">Demo mode: this household is fictional sample data. Real family data should only be entered locally and saved to the encrypted vault, never committed to Git.</div>}
+        {h.isFictional && (
+          <div className="banner" role="alert">
+            <strong>DEMO DATA ONLY — DO NOT ENTER REAL PERSONAL OR ESTATE INFORMATION IN A PUBLIC BUILD</strong>
+            <div>This household is fictional. Real family data belongs only in a local, private copy, saved to the encrypted vault and never committed to Git.</div>
+          </div>
+        )}
         {view === "dashboard" && <Dashboard {...props} />}
         {view === "map" && <EstateMap {...props} />}
         {view === "people" && <People {...props} />}

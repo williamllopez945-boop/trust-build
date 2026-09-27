@@ -1,4 +1,4 @@
-import type { Rule } from "../../../src/domain/rules.ts";
+import { draftMeta, type Rule } from "../../../src/domain/rules.ts";
 import { fiduciariesFor, grantors } from "../../../src/domain/estateGraph.ts";
 import { docStage } from "./helpers.ts";
 
@@ -7,6 +7,7 @@ export const powersOfAttorneyRules: Rule[] = [
     id: "tx.poa.documents_missing",
     module: "powers-of-attorney",
     description: "Incapacity documents for each grantor.",
+    meta: draftMeta(["Tex. Estates Code ch. 751–752 (durable POA)", "Tex. Health & Safety Code ch. 166 (advance directives)"]),
     evaluate(h) {
       const out = [];
       for (const g of grantors(h)) {
@@ -36,6 +37,7 @@ export const powersOfAttorneyRules: Rule[] = [
     id: "tx.poa.agents_unnamed",
     module: "powers-of-attorney",
     description: "Financial and healthcare agents, with alternates.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
     evaluate(h) {
       const out = [];
       for (const role of ["financial_agent", "healthcare_agent"] as const) {

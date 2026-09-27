@@ -1,4 +1,4 @@
-import type { Rule } from "../../../src/domain/rules.ts";
+import { draftMeta, type Rule } from "../../../src/domain/rules.ts";
 import { isMarried } from "./helpers.ts";
 
 export const communityPropertyRules: Rule[] = [
@@ -6,6 +6,7 @@ export const communityPropertyRules: Rule[] = [
     id: "tx.cp.characterization_missing",
     module: "community-property",
     description: "Married household with assets whose community/separate character is unknown.",
+    meta: draftMeta(["Tex. Fam. Code ch. 3 (marital property rights)"]),
     evaluate(h) {
       if (!isMarried(h)) return [];
       return h.assets
@@ -26,6 +27,7 @@ export const communityPropertyRules: Rule[] = [
     id: "tx.cp.joint_trust_separate_property",
     module: "community-property",
     description: "Separate property going into a joint trust.",
+    meta: draftMeta(["Tex. Prop. Code §112.051", "Tex. Fam. Code ch. 3"]),
     evaluate(h) {
       if (h.plan.type.value !== "revocable_joint") return [];
       const sep = h.assets.filter((a) => a.character?.value?.startsWith("separate") && a.funding.state === "funded");

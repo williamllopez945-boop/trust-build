@@ -6,6 +6,7 @@
 import type { Household } from "../src/domain/types.ts";
 import type { Decision } from "../src/domain/decisions.ts";
 import { buildReadBack } from "../src/domain/decisions.ts";
+import { CURRENT_SCHEMA_VERSION } from "../src/domain/schema.ts";
 
 const at = (d: string) => `${d}T15:00:00.000Z`;
 
@@ -18,6 +19,7 @@ function confirmed(id: string, topic: string, sensitivity: Decision["sensitivity
 }
 
 export const demoHousehold: Household = {
+  schemaVersion: CURRENT_SCHEMA_VERSION,
   id: "demo-household",
   label: "The Example Family (fictional demo)",
   isFictional: true,

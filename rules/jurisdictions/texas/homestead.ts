@@ -1,10 +1,11 @@
-import type { Rule } from "../../../src/domain/rules.ts";
+import { draftMeta, type Rule } from "../../../src/domain/rules.ts";
 
 export const homesteadRules: Rule[] = [
   {
     id: "tx.homestead.transfer_review",
     module: "homestead",
     description: "Homestead intended to be deeded into the trust.",
+    meta: draftMeta(["Tex. Prop. Code §41.0021 (homestead in qualifying trust)", "Tex. Tax Code §11.13 (residence homestead exemption)"]),
     evaluate(h) {
       return h.assets
         .filter((a) => a.category === "real_estate" && a.isHomestead?.value === true && a.funding.method === "deed")
@@ -22,6 +23,7 @@ export const homesteadRules: Rule[] = [
     id: "tx.homestead.status_unknown",
     module: "homestead",
     description: "Real estate with unknown homestead status.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
     evaluate(h) {
       return h.assets
         .filter((a) => a.category === "real_estate" && (a.isHomestead === undefined || a.isHomestead.status === "unknown"))

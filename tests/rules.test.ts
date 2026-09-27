@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assertNonConclusory, ConclusoryFlagError, runRules, type JurisdictionRuleSet } from "../src/domain/rules.ts";
+import { assertNonConclusory, ConclusoryFlagError, draftMeta, runRules, type JurisdictionRuleSet } from "../src/domain/rules.ts";
 import { ruleSetsFor, JURISDICTIONS } from "../rules/index.ts";
 import { demo } from "./fixtures.ts";
 
@@ -106,12 +106,40 @@ describe("rule engine safeguards", () => {
     const bad: JurisdictionRuleSet = {
       jurisdiction: "test",
       displayName: "Test",
-      rules: [{ id: "bad", module: "x", description: "", evaluate: () => [{ severity: "info", reviewer: "family", title: "Deed", detail: "The deed is valid.", subjectIds: [] }] }],
+      rules: [{ id: "bad", module: "x", description: "", meta: draftMeta([]), evaluate: () => [{ severity: "info", reviewer: "family", title: "Deed", detail: "The deed is valid.", subjectIds: [] }] }],
     };
     expect(() => runRules(demo(), [bad])).toThrow(ConclusoryFlagError);
   });
 
   it("falls back to common rules for unsupported jurisdictions", () => {
     expect(ruleSetsFor("oklahoma").map((s) => s.jurisdiction)).toEqual(["common"]);
+  });
+});
+
+describe("rule metadata", () => {
+  const all = [...ruleSetsFor("texas").flatMap((s) => s.rules)];
+
+  it("every rule has references, dates, and a verification state", () => {
+    for (const r of all) {
+      expect(r.meta.references.length, r.id).toBeGreaterThan(0);
+      expect(r.meta.effectiveDate, r.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(r.meta.lastReviewed, r.id).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(typeof r.meta.attorneyVerified).toBe("boolean");
+    }
+  });
+
+  it("rule ids are unique", () => {
+    expect(new Set(all.map((r) => r.id)).size).toBe(all.length);
+  });
+
+  it("a rule marked attorney-verified must say who verified it", () => {
+    for (const r of all.filter((x) => x.meta.attorneyVerified)) expect(r.meta.verifiedBy, r.id).toBeTruthy();
+  });
+
+  it("flags carry their rule's verification state and references", () => {
+    for (const f of runRules(demo(), ruleSetsFor("texas"))) {
+      expect(f.ruleVerified).toBe(false);
+      expect(f.references?.length).toBeGreaterThan(0);
+    }
   });
 });

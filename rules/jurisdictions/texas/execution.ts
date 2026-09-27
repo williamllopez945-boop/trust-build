@@ -1,4 +1,4 @@
-import type { Rule } from "../../../src/domain/rules.ts";
+import { draftMeta, type Rule } from "../../../src/domain/rules.ts";
 
 const NAMES: Record<string, string> = {
   trust_agreement: "Trust agreement",
@@ -17,6 +17,7 @@ export const executionRules: Rule[] = [
     id: "tx.exec.formalities",
     module: "execution",
     description: "Documents reviewed but not yet executed.",
+    meta: draftMeta(["Tex. Estates Code §251.051, §251.104 (wills)", "Tex. Estates Code §751.0021 (durable POA)"]),
     evaluate(h) {
       return h.plan.documents
         .filter((d) => d.stage === "attorney_reviewed")
@@ -34,6 +35,7 @@ export const executionRules: Rule[] = [
     id: "tx.exec.storage_reference",
     module: "execution",
     description: "Executed documents should have a storage reference.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
     evaluate(h) {
       return h.plan.documents
         .filter((d) => d.stage === "executed" && !d.storageReference)

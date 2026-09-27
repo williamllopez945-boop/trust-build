@@ -231,6 +231,8 @@ export interface TrustPlan {
 // ---------------------------------------------------------------------------
 
 export interface Household {
+  /** Data-format version; see src/domain/schema.ts. */
+  schemaVersion: number;
   id: string;
   label: string;
   /** Every household stored in Git must set this to true. */

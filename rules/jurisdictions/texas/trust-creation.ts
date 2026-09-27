@@ -1,4 +1,4 @@
-import type { Rule } from "../../../src/domain/rules.ts";
+import { draftMeta, type Rule } from "../../../src/domain/rules.ts";
 import { fiduciariesFor, grantors } from "../../../src/domain/estateGraph.ts";
 
 export const trustCreationRules: Rule[] = [
@@ -6,6 +6,7 @@ export const trustCreationRules: Rule[] = [
     id: "tx.trust.type_undecided",
     module: "trust-creation",
     description: "Trust type (revocable/irrevocable, joint/individual) is not settled.",
+    meta: draftMeta(["Tex. Prop. Code §112.051 (revocation, modification, amendment by settlor)"]),
     evaluate(h) {
       if (h.plan.type.value && h.plan.type.value !== "undecided" && h.plan.type.status === "confirmed") return [];
       return [{
@@ -22,6 +23,7 @@ export const trustCreationRules: Rule[] = [
     id: "tx.trust.merger_check",
     module: "trust-creation",
     description: "Sole trustee who is also the sole beneficiary.",
+    meta: draftMeta(["Tex. Prop. Code §112.034 (merger)"]),
     evaluate(h) {
       const trustees = fiduciariesFor(h, "trustee");
       const beneficiaryIds = new Set(h.plan.distributions.map((d) => d.beneficiaryId));
@@ -42,6 +44,7 @@ export const trustCreationRules: Rule[] = [
     id: "tx.trust.grantors_identified",
     module: "trust-creation",
     description: "At least one grantor is identified.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
     evaluate(h) {
       if (grantors(h).length > 0) return [];
       return [{

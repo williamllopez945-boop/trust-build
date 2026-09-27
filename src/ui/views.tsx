@@ -260,7 +260,7 @@ export function Flags({ h, flags }: ViewProps) {
         <div className="card" key={`${f.ruleId}-${i}`}>
           <div className="row"><StatusPill status={f.severity} /><strong>{f.title}</strong></div>
           <p>{f.detail}</p>
-          <div className="muted">{f.jurisdiction}/{f.module} · reviewer: {f.reviewer.replace(/_/g, " ")} · rule {f.ruleId}</div>
+          <div className="muted">{f.jurisdiction}/{f.module} · reviewer: {f.reviewer.replace(/_/g, " ")} · rule {f.ruleId} · {f.ruleVerified ? "attorney-verified" : "draft rule (not attorney-verified)"}, last reviewed {f.ruleLastReviewed}</div>
           {f.references && <div className="muted">References to verify: {f.references.join("; ")}</div>}
         </div>
       ))}

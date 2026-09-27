@@ -6,7 +6,7 @@
  * file types that must never be committed. Runs in the pre-commit hook and
  * in `npm run check`.
  *
- *   node scripts/privacy-scan.mjs            # scan all tracked files
+ *   node scripts/privacy-scan.mjs            # scan tracked + untracked (non-ignored) files
  *   node scripts/privacy-scan.mjs --staged   # scan staged content (pre-commit)
  *
  * Optional local denylist: put real names/terms (one per line) in
@@ -85,7 +85,9 @@ function loadDenylist() {
 }
 
 export function scanRepo({ staged = false } = {}) {
-  const files = (staged ? git(["diff", "--cached", "--name-only", "--diff-filter=ACMR"]) : git(["ls-files"]))
+  const files = (staged
+    ? git(["diff", "--cached", "--name-only", "--diff-filter=ACMR"])
+    : git(["ls-files", "--cached", "--others", "--exclude-standard"])) // tracked + new, not ignored
     .split("\n")
     .filter(Boolean);
   const denylist = loadDenylist();

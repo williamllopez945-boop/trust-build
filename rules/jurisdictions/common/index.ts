@@ -1,5 +1,5 @@
 /** Jurisdiction-neutral planning checks that apply everywhere. */
-import type { JurisdictionRuleSet, Rule } from "../../../src/domain/rules.ts";
+import { draftMeta, type JurisdictionRuleSet, type Rule } from "../../../src/domain/rules.ts";
 import { fiduciariesFor, minors } from "../../../src/domain/estateGraph.ts";
 import { controlFor } from "../../../src/domain/types.ts";
 
@@ -8,6 +8,7 @@ const rules: Rule[] = [
     id: "common.successor_trustee",
     module: "fiduciaries",
     description: "At least one successor trustee.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
     evaluate(h) {
       if (fiduciariesFor(h, "successor_trustee").length > 0) return [];
       return [{ severity: "review", reviewer: "family", title: "No successor trustee named", detail: "Decide (with explicit confirmation) who would manage the trust if the initial trustee cannot.", subjectIds: [] }];
@@ -17,6 +18,7 @@ const rules: Rule[] = [
     id: "common.guardians_for_minors",
     module: "fiduciaries",
     description: "Guardian and alternate for each minor.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
     evaluate(h) {
       return minors(h)
         .filter((m) => h.fiduciaries.filter((f) => f.role === "guardian_of_person" && (f.forPersonIds ?? []).includes(m.id)).length < 2)
@@ -27,6 +29,7 @@ const rules: Rule[] = [
     id: "common.distribution_shares",
     module: "beneficiaries",
     description: "Primary trust distribution shares total 100%.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
     evaluate(h) {
       const primaries = h.plan.distributions.filter((d) => d.tier === "primary");
       if (primaries.length === 0) {
@@ -43,6 +46,7 @@ const rules: Rule[] = [
     id: "common.unconfirmed_sensitive",
     module: "decisions",
     description: "Distribution and fiduciary entries without a confirmed decision.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
     evaluate(h) {
       const confirmed = new Set(h.decisions.filter((d) => d.state === "confirmed" || d.state === "professionally_reviewed").map((d) => d.id));
       const pending = [
@@ -57,6 +61,7 @@ const rules: Rule[] = [
     id: "common.digital_assets",
     module: "funding",
     description: "Digital asset instructions.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
     evaluate(h) {
       const digital = h.assets.filter((a) => a.category === "digital");
       if (h.plan.digitalAssetInstructions.status === "confirmed" && digital.every((a) => a.funding.state !== "instructions_missing")) return [];
@@ -67,6 +72,7 @@ const rules: Rule[] = [
     id: "common.unfunded_assets",
     module: "funding",
     description: "Ownership-controlled assets not yet funded.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
     evaluate(h) {
       const open = h.assets.filter((a) => controlFor(a.category) === "ownership" && ["not_started", "in_progress", "review"].includes(a.funding.state));
       return open.length ? [{ severity: "info", reviewer: "family", title: `${open.length} asset(s) not yet funded or decided`, detail: "An unfunded asset stays outside the trust. See the funding tracker.", subjectIds: open.map((a) => a.id) }] : [];
@@ -76,6 +82,7 @@ const rules: Rule[] = [
     id: "common.annual_review",
     module: "maintenance",
     description: "Annual review within the last 12 months.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
     evaluate(h) {
       const last = h.lastAnnualReview ? Date.parse(h.lastAnnualReview) : NaN;
       if (!Number.isNaN(last) && Date.now() - last < 366 * 24 * 3600 * 1000) return [];

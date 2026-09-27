@@ -1,10 +1,11 @@
-import type { Rule } from "../../../src/domain/rules.ts";
+import { draftMeta, type Rule } from "../../../src/domain/rules.ts";
 
 export const realPropertyRules: Rule[] = [
   {
     id: "tx.deed.recording_unverified",
     module: "real-property",
     description: "Real estate marked funded without a verified recorded deed.",
+    meta: draftMeta(["General estate-planning practice (no specific statute)"]),
     evaluate(h) {
       return h.assets
         .filter((a) => a.category === "real_estate" && a.funding.state === "funded" && a.funding.deedRecorded?.value !== true)
@@ -21,6 +22,7 @@ export const realPropertyRules: Rule[] = [
     id: "tx.deed.mortgage_and_title",
     module: "real-property",
     description: "Mortgaged real estate being deeded to the trust.",
+    meta: draftMeta(["12 U.S.C. §1701j-3(d)(8) (transfers into inter vivos trusts)"]),
     evaluate(h) {
       return h.assets
         .filter((a) => a.category === "real_estate" && a.funding.method === "deed" && a.hasMortgage?.value === true)

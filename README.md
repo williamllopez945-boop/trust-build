@@ -10,9 +10,12 @@ attorney.
 > reaches legal conclusions. A licensed Texas estate-planning attorney (and a
 > CPA for tax questions) must review and prepare the actual plan.
 
-> **This repository is public.** It contains code, rules, templates, and
-> *fictional* sample data only. Real family information must never be
-> committed. See [PRIVACY.md](PRIVACY.md).
+> [!WARNING]
+> **DEMO DATA ONLY — DO NOT ENTER REAL PERSONAL OR ESTATE INFORMATION IN A PUBLIC BUILD.**
+> This repository is currently **public**. It contains code, rules, templates,
+> and *fictional* sample data only. Real family information must never be
+> committed, and real planning should happen only in a local copy of a
+> **private** repository. See [PRIVACY.md](PRIVACY.md).
 
 ## Quick start
 
@@ -94,6 +97,33 @@ fails if any listed term appears in a tracked file.
 - Browser storage can be cleared by the browser or the user. Keep an encrypted
   backup of your vault.
 - There is no multi-user sync, no document drafting, and no e-signing, by design.
+
+## Repository protections
+
+CI (`.github/workflows/ci.yml`) runs on every pull request and every push to `main`:
+privacy scan → typecheck → tests → build → `npm audit`. The privacy scan
+runs **before** dependencies are installed and fails the build on likely PII,
+secrets, or forbidden files. Dependabot opens weekly dependency updates.
+
+The pre-commit hook is defense in depth; CI is the gate. Recommended GitHub
+settings for `main` (Settings → Branches → Add branch ruleset):
+
+- Require a pull request before merging, with at least 1 approval
+- Require the **CI / check** status to pass, with branches up to date
+- Block force pushes and deletions
+- Enable secret scanning and push protection (Settings → Code security)
+- Make the repository **private** before any real planning starts
+
+Branch rules and secret scanning on private repositories may require a paid
+GitHub plan; the CI privacy scan works either way.
+
+## Rules and attorney verification
+
+Every rule carries metadata: references, an effective date, a last-reviewed
+date, and `attorneyVerified`. **All rules are currently unverified drafts.**
+Each flag shows its rule's verification state, and the packet lists it. A rule
+becomes verified only after a licensed Texas attorney reviews its trigger and
+wording, recorded in `verifiedBy`.
 
 ## Documentation
 

@@ -4,7 +4,7 @@
  */
 import { fiduciariesFor, grantors, minors, nameOf } from "../domain/estateGraph.ts";
 import { fundingSummary, BADGE_ICON } from "../domain/funding.ts";
-import { runRules, REFERENCE_CAVEAT, type JurisdictionRuleSet } from "../domain/rules.ts";
+import { runRules, REFERENCE_CAVEAT, RULES_VERSION, type JurisdictionRuleSet } from "../domain/rules.ts";
 import { statusOf, unresolved } from "../domain/decisions.ts";
 import { controlFor, type Household, type FiduciaryRole, type Tracked } from "../domain/types.ts";
 
@@ -109,9 +109,10 @@ export function generateAttorneyPacket(h: Household, ruleSets: readonly Jurisdic
   out.push(table(["Topic", "Sensitivity", "State", "User's answer"], unresolved(h.decisions).map((d) => [d.topic, d.sensitivity, d.state, d.answer])));
 
   out.push("## 11. Attorney-review flags", "");
-  out.push(`${flags.length} flag(s). ${REFERENCE_CAVEAT}`, "");
+  out.push(`${flags.length} flag(s), rules version ${RULES_VERSION}. ${REFERENCE_CAVEAT}`, "");
   for (const f of flags) {
-    out.push(`- **[${f.severity}] ${f.title}** (${f.jurisdiction}/${f.module}, reviewer: ${f.reviewer.replace(/_/g, " ")})`);
+    const verified = f.ruleVerified ? "attorney-verified rule" : "draft rule, not attorney-verified";
+    out.push(`- **[${f.severity}] ${f.title}** (${f.jurisdiction}/${f.module}, reviewer: ${f.reviewer.replace(/_/g, " ")}; ${verified}, last reviewed ${f.ruleLastReviewed ?? "?"})`);
     out.push(`  ${f.detail}`);
     if (f.references?.length) out.push(`  _References to verify:_ ${f.references.join("; ")}`);
   }
