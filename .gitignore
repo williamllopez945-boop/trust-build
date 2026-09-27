@@ -1,0 +1,27 @@
+# Keep sensitive and scanned material out of Git.
+*.pdf
+*.jpg
+*.jpeg
+*.png
+*.heic
+*.tif
+*.tiff
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.zip
+
+# Secrets and local environment
+.env
+.env.*
+*.key
+*.pem
+secrets/
+private/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
