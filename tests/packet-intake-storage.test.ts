@@ -12,7 +12,8 @@ describe("attorney review packet", () => {
     for (const heading of [
       "Household summary", "Dependents", "Trustees and successors", "Guardians and alternates",
       "Trust beneficiaries and contingents", "Asset inventory", "Real property", "Retirement accounts and insurance",
-      "Unresolved decisions", "Attorney-review flags", "Funding status", "Decision and change log",
+      "Unresolved decisions", "Attorney-review flags", "Funding status and gaps", "Decision and change history",
+      "Confirmed facts", "Conflicts and pending changes", "Beneficiary-designation issues", "Rule sources",
     ]) {
       expect(md).toContain(heading);
     }
@@ -21,6 +22,18 @@ describe("attorney review packet", () => {
   it("states it is not legal advice and marks sample data", () => {
     expect(md).toMatch(/not legal or tax advice/);
     expect(md).toMatch(/fictional/);
+  });
+
+  it("labels legal/tax items as not determined by the software", () => {
+    const flagsSection = md.split("## 13.")[1].split("## 14.")[0];
+    expect(flagsSection).toContain("FamilyVault did not determine this");
+    expect(md.split("## 11.")[1].split("## 12.")[0]).toContain("FamilyVault did not determine this");
+  });
+
+  it("lists confirmed facts, funding gaps, and rule sources", () => {
+    expect(md.split("## 10.")[1].split("## 11.")[0]).toContain("Sam Placeholder");
+    expect(md.split("## 14.")[1].split("## 15.")[0]).toContain("Deed recording not verified");
+    expect(md.split("## 17.")[1]).toContain("Tex. Prop. Code §41.0021");
   });
 
   it("lists only children of the grantors as dependents", () => {

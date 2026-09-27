@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { buildEstateGraph, fiduciariesFor, nameOf, TRUST_NODE_ID } from "../domain/estateGraph.ts";
-import { BADGE_ICON, fundingSummary } from "../domain/funding.ts";
+import { BADGE_ICON, fundingSummary, TREATMENT_TEXT } from "../domain/funding.ts";
 import { confirmDecision, statusOf, unresolved, type Decision, type Reviewer } from "../domain/decisions.ts";
 import { auditEntry, type AuditEntry } from "../domain/audit.ts";
 import { recordProfessionalOutcome, type ChangeInput } from "../domain/changes.ts";
@@ -60,7 +60,7 @@ export function Dashboard({ h, flags }: ViewProps) {
     <>
       <h2>{h.plan.name}</h2>
       <div className="grid">
-        <div className="card"><div className="muted">Funding progress</div><div className="stat">{funding.percent}%</div><Progress percent={funding.percent} /><div className="muted">{funding.done} of {funding.total} assets resolved</div></div>
+        <div className="card"><div className="muted">Funding progress</div><div className="stat">{funding.percent}%</div><Progress percent={funding.percent} /><div className="muted">{funding.done} of {funding.total} applicable assets complete · {funding.blocked} blocked · {funding.notApplicable} outside trust</div></div>
         <div className="card"><div className="muted">Attorney-required flags</div><div className="stat s-attorney_required">{count("attorney_required")}</div><div className="muted">{count("review")} review · {count("info")} info</div></div>
         <div className="card"><div className="muted">Unresolved decisions</div><div className="stat">{open.length}</div><div className="muted">{open.filter((d) => d.state === "awaiting_professional_review").length} awaiting attorney/CPA</div></div>
         <div className="card"><div className="muted">People in estate graph</div><div className="stat">{h.people.length}</div><div className="muted">{h.assets.length} assets · {h.fiduciaries.length} fiduciary roles</div></div>
@@ -408,19 +408,37 @@ export function Funding({ h, submit }: ViewProps) {
     const a = h.assets.find((x) => x.id === id)!;
     submit({ kind: "asset", op: "update", entityId: id, label: `Funding status: ${a.label}`, after: { funding: { ...a.funding, state, lastVerified: new Date().toISOString().slice(0, 10) } }, provenance: formProvenance });
   };
+  const markReviewed = (id: string) => {
+    const a = h.assets.find((x) => x.id === id)!;
+    submit({ kind: "asset", op: "update", entityId: id, label: `Reviewed funding: ${a.label}`, after: { funding: { ...a.funding, lastVerified: new Date().toISOString().slice(0, 10) } }, provenance: formProvenance });
+  };
   return (
     <>
       <h2>Funding tracker</h2>
-      <div className="card"><div className="row"><strong>{s.done}/{s.total} resolved ({s.percent}%)</strong></div><Progress percent={s.percent} /></div>
+      <div className="grid">
+        <div className="card"><div className="muted">Overall</div><div className="stat">{s.percent}%</div><Progress percent={s.percent} /><div className="muted">{s.done}/{s.total} applicable assets complete</div></div>
+        {(["ownership_transfer", "beneficiary_designation", "review_only"] as const).map((t) => (
+          <div className="card" key={t}><div className="muted">{TREATMENT_TEXT[t]}</div><div className="stat">{s.byTreatment[t].complete}/{s.byTreatment[t].total}</div><div className="muted">complete</div></div>
+        ))}
+        <div className="card"><div className="muted">Intentionally outside trust</div><div className="stat">{s.notApplicable}</div><div className="muted">not counted in progress</div></div>
+      </div>
       <div className="card">
-        <Table headers={["Asset", "Control", "Status", "Update"]} rows={s.rows.map((r) => {
+        <Table headers={["Asset", "Treatment", "Status", "Blocking reasons", "Next action", "Last reviewed", "Update"]} rows={s.rows.map((r) => {
           const a = h.assets.find((x) => x.id === r.assetId)!;
-          return [r.label, r.control === "ownership" ? "ownership" : "designation", `${BADGE_ICON[r.badge]} ${r.text}`,
+          return [
+            r.label,
+            TREATMENT_TEXT[r.treatment],
+            <span>{BADGE_ICON[r.badge]} {r.completion.replace("_", " ")}<div className="muted">{r.text}</div></span>,
+            r.blockers.length ? <ul className="tight">{r.blockers.map((b) => <li key={b}>{b}</li>)}</ul> : "—",
+            r.nextAction,
+            <span className={r.reviewStale ? "s-review" : undefined}>{r.lastReviewed ?? "never"}<div><button className="link" onClick={() => markReviewed(a.id)}>Mark reviewed today</button></div></span>,
             <select value={a.funding.state} onChange={(e) => setState(a.id, e.target.value as FundingState)}>
               {STATES_FOR[r.control].map((st) => <option key={st} value={st}>{st.replace(/_/g, " ")}</option>)}
-            </select>];
+            </select>,
+          ];
         })} />
       </div>
+      <p className="muted">Retirement accounts, life insurance, and annuities are coordinated by beneficiary designation. They are never counted as retitled into the trust.</p>
     </>
   );
 }

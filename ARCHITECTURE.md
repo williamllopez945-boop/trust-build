@@ -57,6 +57,18 @@ one of `known | confirmed | unknown | needs_review | attorney_required`.
 If data says otherwise, the funding tracker shows a review badge and the
 `tx.ret.not_retitled` rule raises an attorney-required flag.
 
+### Funding engine
+
+`fundingRow` gives each asset:
+
+- a **treatment**: ownership transfer, beneficiary designation, intentionally outside the trust, or review needed;
+- a **completion**: complete, incomplete, or not applicable. Assets deliberately left outside the trust are not applicable and are excluded from progress, so they never count as done or as missing;
+- **blocking reasons**, for example an unverified deed recording, a designation that isn't on file or doesn't total 100%, an invalid method, mixed community/separate character, or missing instructions;
+- a concrete **next action**;
+- a **last reviewed** date, flagged as stale after a year.
+
+An asset with open blockers never shows a check mark.
+
 ## Decisions
 
 | Sensitivity | Gate | Result |

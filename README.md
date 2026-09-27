@@ -50,8 +50,8 @@ Other commands:
 | Decision intake | One structured question at a time; answers become *proposed* changes |
 | Review changes | Every proposed change with its source, field diff, conflicts, and the confirmation it needs |
 | Review flags | Texas and general rules, as items for an attorney or CPA to review |
-| Funding tracker | Status of each asset: funded, review, outside, designation, missing |
-| Attorney packet | Markdown export; print to PDF |
+| Funding tracker | Each asset's treatment, blocking reasons, next action, and last-reviewed date; progress excludes assets deliberately left outside |
+| Attorney packet | Markdown export (print to PDF): confirmed facts, unresolved decisions, conflicts, flags with rule sources, funding gaps, change history |
 | Audit log | Append-only record of decisions and changes |
 
 The app opens on a **fictional demo household** ("The Example Family").

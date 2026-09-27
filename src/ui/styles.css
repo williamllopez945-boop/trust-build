@@ -65,3 +65,4 @@ button.link { background: none; border: 0; color: var(--accent); text-decoration
 @media (max-width: 760px) { .tracked { grid-template-columns: 1fr; } }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
 label.filebtn { border: 1px solid var(--accent); color: var(--accent); border-radius: 6px; padding: 8px 14px; font-size: 14px; cursor: pointer; }
+ul.tight { margin: 0; padding-left: 16px; }
