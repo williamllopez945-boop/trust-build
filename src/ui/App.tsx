@@ -9,6 +9,8 @@ import { ruleSetsFor } from "../../rules/index.ts";
 import { Assets, Audit, Dashboard, Decisions, Designations, EstateMap, Flags, Funding, Packet, People } from "./views.tsx";
 import { Review } from "./review.tsx";
 import { GATE_LABEL, submitChange, type ChangeInput } from "../domain/changes.ts";
+import { auditEntry } from "../domain/audit.ts";
+import { BACKUP_EXTENSION, backupFileName, exportBackup, importBackup } from "../storage/backup.ts";
 
 const VIEWS = [
   ["dashboard", "Dashboard"],
@@ -68,6 +70,35 @@ export function App() {
     }
   };
 
+  const exportFile = async () => {
+    try {
+      const withAudit = { ...h, audit: [...h.audit, auditEntry("backup.exported", h.id, "Encrypted backup exported")] };
+      const text = await exportBackup({ household: withAudit, intake }, passphrase);
+      setH(withAudit);
+      const url = URL.createObjectURL(new Blob([text], { type: "application/octet-stream" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = backupFileName();
+      a.click();
+      URL.revokeObjectURL(url);
+      setVaultMsg("Encrypted backup downloaded. Store it outside this repository.");
+    } catch (e) {
+      setVaultMsg((e as Error).message);
+    }
+  };
+  const importFile = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      const r = await importBackup(await file.text(), passphrase);
+      if (!window.confirm(`Replace the household on screen with "${r.household.label}" from this backup?`)) return;
+      setH({ ...r.household, audit: [...r.household.audit, auditEntry("backup.imported", r.household.id, `Imported encrypted backup (${file.name.endsWith(BACKUP_EXTENSION) ? "fvault" : "file"})`)] });
+      setIntake(r.intake);
+      setVaultMsg("Backup imported.");
+    } catch (e) {
+      setVaultMsg((e as Error).message);
+    }
+  };
+
   return (
     <div className="layout">
       <nav>
@@ -84,6 +115,11 @@ export function App() {
           <div className="row" style={{ marginTop: 6 }}>
             <button className="secondary" onClick={unlock} disabled={!hasSavedVault()}>Unlock</button>
             <button className="primary" onClick={save}>Save to vault</button>
+          </div>
+          <div className="muted" style={{ marginTop: 12 }}>Encrypted backup file</div>
+          <div className="row" style={{ marginTop: 6 }}>
+            <button className="secondary" onClick={exportFile}>Export</button>
+            <label className="secondary filebtn">Import<input type="file" accept={`${BACKUP_EXTENSION},application/json`} onChange={(e) => { void importFile(e.target.files?.[0]); e.target.value = ""; }} hidden /></label>
           </div>
           {vaultMsg && <p className="muted">{vaultMsg}</p>}
         </div>

@@ -18,7 +18,7 @@
 
 ## Next
 - [ ] "Start a new household" flow for entering real data from scratch
-- [ ] Encrypted vault export/import file for backups
+- [x] Encrypted backup export/import (`.fvault`) with validation and safe failure
 - [ ] Annual review workflow with dated checklist and `lastAnnualReview`
 - [ ] Incapacity-planning view (agents, directives, definition of incapacity)
 - [ ] PDF export with page breaks and table of contents

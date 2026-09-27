@@ -15,7 +15,7 @@
 - Deeds, wills, trust agreements, powers of attorney, whether draft or signed
 - Financial statements, tax returns, scans, or photos of documents
 - API keys, tokens, passwords, private keys, `.env` files
-- Vault exports and attorney packets for real households
+- Vault exports, `.fvault` backups (even though encrypted), and attorney packets for real households
 
 ## How this is enforced
 

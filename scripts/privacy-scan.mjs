@@ -24,6 +24,7 @@ export const FORBIDDEN_PATHS = [
   { re: /^(estate|assets|trust|funding|audit)\/(?!README\.md$|\.gitkeep$)/, why: "real-data folder: only README.md may be committed" },
   { re: /^documents\/(drafts|attorney-reviewed|executed)\/(?!README\.md$|\.gitkeep$)/, why: "document folder: only README.md may be committed" },
   { re: /(^|\/)(vault|household|real-data)[^/]*\.(json|enc)$/i, why: "exported household/vault data" },
+  { re: /\.fvault$/i, why: "FamilyVault backup (contains real data, even though encrypted)" },
 ];
 
 export const CONTENT_RULES = [

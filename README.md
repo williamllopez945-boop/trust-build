@@ -63,8 +63,14 @@ The app opens on a **fictional demo household** ("The Example Family").
    encrypted with AES-GCM in this browser's storage.
 3. Use **Unlock** with the same passphrase to reload it. The passphrase is not
    stored. If you lose it, the data cannot be recovered.
-4. Export the attorney packet only when you need it, and keep exports out of
-   this repository (`attorney-packet-*.md` is git-ignored).
+4. **Back up** with **Export** under "Encrypted backup file". This downloads
+   a `.fvault` file encrypted with your passphrase; only format metadata is
+   readable. **Import** restores it after checking the passphrase, detecting
+   tampering, and migrating/validating the data. If anything fails, nothing is
+   replaced.
+5. Export the attorney packet only when you need it. Keep packets and backups
+   out of this repository (`attorney-packet-*.md` and `*.fvault` are
+   git-ignored, and the privacy scan blocks them).
 
 To stop real names from being committed by accident, list them (one per line)
 in a local `.privacy-denylist` file. It is git-ignored, and the privacy scan
@@ -93,8 +99,8 @@ fails if any listed term appears in a tracked file.
 - Rules are review prompts, not legal analysis. They cover common Texas
   planning issues, not every situation, and statutes change. The references on
   each flag are for the attorney to verify.
-- Browser storage can be cleared by the browser or the user. Keep an encrypted
-  backup of your vault.
+- Browser storage can be cleared by the browser or the user. Export an
+  encrypted backup regularly and store it somewhere safe outside Git.
 - There is no multi-user sync, no document drafting, and no e-signing, by design.
 
 ## Repository protections

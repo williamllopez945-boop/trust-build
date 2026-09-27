@@ -17,7 +17,9 @@ export type AuditAction =
   | "packet.generated"
   | "change.applied"
   | "change.rejected"
-  | "change.conflict_flagged";
+  | "change.conflict_flagged"
+  | "backup.exported"
+  | "backup.imported";
 
 /** Field-level detail recorded for every applied or rejected change. */
 export interface ChangeAuditDetail {

@@ -8,6 +8,7 @@
 | Someone reads the browser storage | AES-GCM-256 encryption; key derived with PBKDF2-SHA-256 (310k iterations); passphrase never stored |
 | Network exfiltration | No backend. The dev server binds to 127.0.0.1. The app makes no network calls. |
 | Tampering with history | Append-only audit log in the app; Git history for code |
+| Stolen or tampered backup file | `.fvault` backups are AES-GCM encrypted (authenticated) with only format metadata in plaintext; import rejects wrong passphrases, modified files, hostile KDF parameters, oversized files, and invalid data, all-or-nothing |
 | AI overreach | Domain-level guards: the assistant cannot answer dispositive, fiduciary, or legal/tax decisions or confirm anything |
 
 ## Not yet addressed
@@ -15,7 +16,7 @@
 - Protection against malware or someone with access to the unlocked device
 - Brute force of weak passphrases (use a long passphrase)
 - Signed or verified builds
-- Backup and recovery of the vault (export an encrypted backup yourself)
+- Recovery if both the passphrase and every backup are lost (by design, there is none)
 
 ## Guidance
 

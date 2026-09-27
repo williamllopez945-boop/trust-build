@@ -29,6 +29,7 @@ const MIGRATIONS: Record<number, Migration> = {
 };
 
 const isObj = (x: unknown): x is Record<string, unknown> => typeof x === "object" && x !== null && !Array.isArray(x);
+const arr = (x: unknown): unknown[] => (Array.isArray(x) ? x : []);
 const STATUSES = new Set<string>(DATA_STATUSES);
 
 function checkTracked(x: unknown, path: string, problems: string[]) {
@@ -51,19 +52,19 @@ export function validateHousehold(h: Record<string, unknown>): string[] {
     if (!Array.isArray(h.plan.documents)) problems.push("plan.documents: expected array");
   }
   const ids = new Set<string>();
-  for (const [i, p] of ((h.people as unknown[]) ?? []).entries()) {
+  for (const [i, p] of arr(h.people).entries()) {
     if (!isObj(p) || typeof p.id !== "string" || typeof p.displayName !== "string") problems.push(`people[${i}]: expected id and displayName`);
     else if (ids.has(p.id)) problems.push(`people[${i}]: duplicate id ${p.id}`);
     else ids.add(p.id);
   }
-  for (const [i, a] of ((h.assets as unknown[]) ?? []).entries()) {
+  for (const [i, a] of arr(h.assets).entries()) {
     if (!isObj(a) || typeof a.id !== "string" || typeof a.category !== "string" || !isObj(a.funding)) problems.push(`assets[${i}]: expected id, category, funding`);
     else {
       checkTracked(a.titledTo, `assets[${i}].titledTo`, problems);
       if (typeof a.refLast4 === "string" && !/^\d{0,4}$/.test(a.refLast4)) problems.push(`assets[${i}].refLast4: at most 4 digits`);
     }
   }
-  for (const [i, f] of ((h.fiduciaries as unknown[]) ?? []).entries()) {
+  for (const [i, f] of arr(h.fiduciaries).entries()) {
     if (!isObj(f) || !STATUSES.has(String(f.status))) problems.push(`fiduciaries[${i}]: invalid status`);
   }
   return problems;

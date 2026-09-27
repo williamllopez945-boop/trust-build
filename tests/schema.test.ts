@@ -19,6 +19,7 @@ describe("household schema", () => {
   it.each([
     ["not an object", 42],
     ["missing arrays", { ...demo(), people: undefined }],
+    ["non-array collections", { ...demo(), people: "nope", assets: 7, fiduciaries: {} }],
     ["bad status", { ...demo(), maritalStatus: { value: "married", status: "sure" } }],
     ["full account number", { ...demo(), assets: [{ ...demo().assets[1], refLast4: ["1234", "56789"].join("") }] }],
     ["duplicate person id", { ...demo(), people: [demo().people[0], demo().people[0]] }],

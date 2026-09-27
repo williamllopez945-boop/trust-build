@@ -41,6 +41,9 @@ export async function encryptJson(value: unknown, passphrase: string): Promise<E
 }
 
 export async function decryptJson<T>(blob: EncryptedBlob, passphrase: string): Promise<T> {
+  if (!Number.isInteger(blob.iterations) || blob.iterations < 100_000 || blob.iterations > 5_000_000) {
+    throw new Error("Unsupported encryption parameters.");
+  }
   const key = await deriveKey(passphrase, unb64(blob.salt), blob.iterations);
   let pt: ArrayBuffer;
   try {

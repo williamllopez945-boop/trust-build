@@ -45,7 +45,7 @@ describe("content detection", () => {
 });
 
 describe("path rules", () => {
-  it.each([".env", "config/.env.local", "id.pem", "scan.pdf", "deed.jpg", "will.docx", "documents/executed/trust.md", "estate/people.json", "audit/log.json", "household-export.json"])(
+  it.each([".env", "config/.env.local", "id.pem", "scan.pdf", "deed.jpg", "will.docx", "documents/executed/trust.md", "estate/people.json", "audit/log.json", "household-export.json", "familyvault-backup-2026-01-01.fvault"])(
     "forbids %s",
     (p) => expect(checkPath(p).length).toBeGreaterThan(0),
   );
