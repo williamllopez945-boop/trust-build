@@ -1,0 +1,4 @@
+#!/bin/sh
+# FamilyVault pre-commit: block PII, secrets, and forbidden files.
+# Enable once per clone with: npm run setup-hooks
+exec node scripts/privacy-scan.mjs --staged
