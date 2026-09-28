@@ -5,7 +5,7 @@
  */
 import type { Household } from "./types.ts";
 
-export type EntityKind = "person" | "relationship" | "fiduciary" | "asset" | "distribution" | "household" | "plan";
+export type EntityKind = "person" | "relationship" | "fiduciary" | "asset" | "distribution" | "document" | "household" | "plan";
 
 export const SINGLETON_KINDS: ReadonlySet<EntityKind> = new Set(["household", "plan"]);
 
@@ -28,6 +28,7 @@ function list(h: Household, kind: EntityKind): Entity[] {
     case "fiduciary": return h.fiduciaries as unknown as Entity[];
     case "asset": return h.assets as unknown as Entity[];
     case "distribution": return h.plan.distributions as unknown as Entity[];
+    case "document": return h.plan.documents as unknown as Entity[];
     default: throw new Error(`${kind} is not a list entity`);
   }
 }
@@ -49,6 +50,7 @@ function withList(h: Household, kind: EntityKind, next: Entity[]): Household {
     case "fiduciary": return { ...h, fiduciaries: next as unknown as Household["fiduciaries"] };
     case "asset": return { ...h, assets: next as unknown as Household["assets"] };
     case "distribution": return { ...h, plan: { ...h.plan, distributions: next as unknown as Household["plan"]["distributions"] } };
+    case "document": return { ...h, plan: { ...h.plan, documents: next as unknown as Household["plan"]["documents"] } };
     default: throw new Error(`${kind} is not a list entity`);
   }
 }
@@ -76,11 +78,17 @@ export function referencesTo(h: Household, personId: string): string[] {
   for (const f of h.fiduciaries) if (f.personId === personId || (f.forPersonIds ?? []).includes(personId)) refs.push(`fiduciary ${f.id} (${f.role})`);
   for (const d of h.plan.distributions) if (d.beneficiaryId === personId) refs.push(`distribution ${d.id}`);
   for (const r of h.relationships) if (r.from === personId || r.to === personId) refs.push(`relationship ${r.id}`);
+  for (const d of h.plan.documents) if (d.forPersonId === personId) refs.push(`document ${d.id} (${d.kind})`);
   for (const a of h.assets) {
     if ((a.titledTo.value ?? []).includes(personId)) refs.push(`asset ${a.id} (titled to)`);
     if ((a.designations?.value ?? []).some((d) => d.personId === personId)) refs.push(`asset ${a.id} (designation)`);
   }
   return refs;
+}
+
+/** Documents that point at an asset (blocks archiving that asset). */
+export function assetReferences(h: Household, assetId: string): string[] {
+  return h.plan.documents.filter((d) => d.forAssetId === assetId).map((d) => `document ${d.id} (${d.kind})`);
 }
 
 export function newId(prefix: string, now: Date = new Date()): string {

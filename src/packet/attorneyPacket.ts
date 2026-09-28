@@ -5,6 +5,7 @@
 import { fiduciariesFor, grantors, minors, nameOf } from "../domain/estateGraph.ts";
 import { fundingSummary, BADGE_ICON, TREATMENT_TEXT } from "../domain/funding.ts";
 import { describeValue, visibleFields } from "../domain/changes.ts";
+import { kindInfo, recommendedDocuments, stageLabel } from "../domain/documents.ts";
 import { runRules, REFERENCE_CAVEAT, RULES_VERSION, type JurisdictionRuleSet } from "../domain/rules.ts";
 import { statusOf, unresolved } from "../domain/decisions.ts";
 import { controlFor, type Household, type FiduciaryRole, type Tracked } from "../domain/types.ts";
@@ -174,7 +175,16 @@ export function generateAttorneyPacket(h: Household, ruleSets: readonly Jurisdic
   ])));
 
   out.push("## 15. Plan documents", "");
-  out.push(table(["Document", "For", "Stage", "Original kept at"], h.plan.documents.map((d) => [d.kind.replace(/_/g, " "), d.forPersonId ? nameOf(h, d.forPersonId) : "—", d.stage.replace(/_/g, " "), d.storageReference ?? "—"])));
+  out.push("_Status as reported by the family. FamilyVault does not hold, draft, or sign these documents._", "");
+  out.push(table(["Document", "For", "Stage", "Signed on", "Original kept at"], h.plan.documents.map((d) => [
+    kindInfo(d.kind)?.label ?? d.kind,
+    d.forPersonId ? nameOf(h, d.forPersonId) : d.forAssetId ? (h.assets.find((a) => a.id === d.forAssetId)?.label ?? "—") : "Household",
+    stageLabel(d.stage),
+    d.executedOn ?? "—",
+    d.storageReference ?? (d.stage === "executed" ? "_not recorded_" : "—"),
+  ])));
+  const missing = recommendedDocuments(h).filter((r) => !r.tracked);
+  if (missing.length) out.push(`**Commonly used documents not yet tracked:** ${missing.map((m) => m.label).join("; ")}.`, "");
 
   out.push("## 16. Decision and change history", "");
   out.push(table(["Date", "Actor", "Action", "Summary", "Changes (old → new)", "Confirmation"], [...h.audit].sort((a, b) => a.at.localeCompare(b.at)).map((e) => [

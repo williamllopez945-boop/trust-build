@@ -11,6 +11,7 @@ import { answerQuestion, askProfessional, nextQuestion, seeksProfessionalAdvice,
 import type { IntakeAnswer } from "../intake/mapping.ts";
 import { QUESTIONS, type IntakeQuestion } from "../intake/questions.ts";
 import { EntityForm } from "./forms.tsx";
+import { documentProgress, kindInfo, recommendedDocuments, stageLabel } from "../domain/documents.ts";
 import { generateAttorneyPacket } from "../packet/attorneyPacket.ts";
 import { ruleSetsFor } from "../../rules/index.ts";
 import { Progress, StatusPill, Table } from "./components.tsx";
@@ -391,6 +392,66 @@ export function Flags({ h, flags }: ViewProps) {
           {f.references && <div className="muted">References to verify: {f.references.join("; ")}</div>}
         </div>
       ))}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
+
+const DOC_FLAG_MODULES = new Set(["execution", "pour-over-will", "powers-of-attorney", "trust-creation"]);
+const StagePill = ({ stage }: { stage: string }) => <span className={`pill stage-${stage}`}>{stageLabel(stage)}</span>;
+
+export function Documents({ h, flags, submit }: ViewProps) {
+  const ed = useEditor(submit);
+  const rec = recommendedDocuments(h);
+  const progress = documentProgress(h);
+  const percent = progress.recommended ? Math.round((progress.signed / progress.recommended) * 100) : 0;
+  const recKeys = new Set(rec.filter((r) => r.tracked).map((r) => r.tracked!.id));
+  const other = h.plan.documents.filter((d) => !recKeys.has(d.id));
+  const docFlags = flags.filter((f) => DOC_FLAG_MODULES.has(f.module));
+  const whose = (d: Household["plan"]["documents"][number]) =>
+    d.forPersonId ? nameOf(h, d.forPersonId) : d.forAssetId ? (h.assets.find((a) => a.id === d.forAssetId)?.label ?? "—") : "Household";
+  const row = (d: Household["plan"]["documents"][number]) => [
+    kindInfo(d.kind)?.label ?? d.kind, whose(d),
+    <StagePill stage={d.stage} />,
+    d.executedOn ?? "—",
+    d.stage === "executed" && !d.storageReference ? <span className="s-review">not recorded</span> : (d.storageReference ?? "—"),
+    <Actions onEdit={() => ed.setEditing({ kind: "document", entity: d as unknown as Obj })} onArchive={() => ed.archive("document", d.id, kindInfo(d.kind)?.label ?? d.kind)} />,
+  ];
+
+  return (
+    <>
+      <h2>Legal documents</h2>
+      <p className="banner">FamilyVault tracks each document's status and where the signed original is kept. <strong>Never upload or paste the documents themselves.</strong> Your attorney drafts them and supervises signing; FamilyVault never finalizes or signs anything.</p>
+      {ed.form(h)}
+      <div className="grid">
+        <div className="card"><div className="muted">Signed</div><div className="stat">{progress.signed}/{progress.recommended}</div><Progress percent={percent} /><div className="muted">of the commonly used documents below</div></div>
+        <div className="card"><div className="muted">Being tracked</div><div className="stat">{progress.tracked}/{progress.recommended}</div><div className="muted">{progress.recommended - progress.tracked} not started</div></div>
+        <div className="card"><div className="muted">Related review flags</div><div className="stat">{docFlags.length}</div><div className="muted">signing, wills, powers of attorney</div></div>
+      </div>
+      <div className="card">
+        <div className="row"><h3 style={{ margin: 0 }}>Commonly part of this household's plan</h3><button className="secondary" onClick={() => ed.setEditing({ kind: "document", entity: null })}>Track another document</button></div>
+        <p className="muted">A checklist to discuss with your attorney, based on the grantors, minor children, and property deeded to the trust. It is not a determination of what your plan requires.</p>
+        <Table headers={["Document", "Why it's common", "Status", ""]} rows={rec.map((r) => [
+          r.label,
+          <span className="muted">{r.reason}</span>,
+          r.tracked ? <span><StagePill stage={r.tracked.stage} />{r.tracked.executedOn ? ` ${r.tracked.executedOn}` : ""}</span> : <span className="muted">not tracked</span>,
+          r.tracked
+            ? <button className="link" onClick={() => ed.setEditing({ kind: "document", entity: r.tracked as unknown as Obj })}>Update</button>
+            : <button className="link" onClick={() => ed.setEditing({ kind: "document", entity: { kind: r.kind, forPersonId: r.forPersonId, forAssetId: r.forAssetId, stage: "not_started" } as Obj, isNew: true })}>Start tracking</button>,
+        ])} />
+      </div>
+      <div className="card">
+        <h3>All tracked documents</h3>
+        <Table headers={["Document", "For", "Stage", "Signed on", "Original kept at", ""]} rows={h.plan.documents.map(row)} />
+        {other.length > 0 && <p className="muted">{other.length} tracked document(s) are outside the common checklist above.</p>}
+      </div>
+      {docFlags.length > 0 && (
+        <div className="card">
+          <h3>Related review flags</h3>
+          {docFlags.map((f, i) => <p key={`${f.ruleId}-${i}`} className={`s-${f.severity}`}>⚑ {f.title}<span className="muted"> ({f.reviewer.replace(/_/g, " ")})</span></p>)}
+        </div>
+      )}
     </>
   );
 }

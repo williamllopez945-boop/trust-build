@@ -174,3 +174,12 @@ describe("archive and validation", () => {
     expect(proposeChange(demo(), input({ kind: "fiduciary", op: "create", after: { personId: "nobody", role: "executor", order: 1, status: "known" } }), now).problems.length).toBeGreaterThan(0);
   });
 });
+
+it("forms: an invalid change is refused, not queued", () => {
+  const h = demo();
+  const r = submitChange(h, { kind: "fiduciary", op: "create", after: { personId: "nobody", role: "executor", order: 1, status: "known" }, provenance: { source: "form", actor: "user", confidence: "stated" } }, new Date("2026-06-01T12:00:00Z"));
+  expect(r.applied).toBe(false);
+  expect(r.change.problems.length).toBeGreaterThan(0);
+  expect(r.household).toBe(h);
+  expect(r.household.pendingChanges).toEqual([]);
+});

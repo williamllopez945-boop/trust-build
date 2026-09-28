@@ -46,6 +46,7 @@ Other commands:
 | Estate map | Typed graph of people, the trust, assets, and their relationships |
 | People & fiduciaries | Add, edit, or archive people, relationships, trustees, guardians, and agents, plus household and plan details |
 | Assets | Add, edit, or archive assets, split into **ownership-controlled** and **beneficiary-controlled** |
+| Legal documents | Track each trust, will, power of attorney, directive, and deed: its stage, signing date, and where the original is kept (never the document itself), against a checklist for this household |
 | Beneficiaries | Trust beneficiaries and shares; retirement and insurance designations with related flags |
 | Decision intake | One structured question at a time; answers become *proposed* changes |
 | Review changes | Every proposed change with its source, field diff, conflicts, and the confirmation it needs |

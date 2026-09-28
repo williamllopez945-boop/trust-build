@@ -16,6 +16,7 @@ src/
     schema.ts              Schema versioning, migrations, validation
     newHousehold.ts        New real household; grantors added through the change pipeline
     annualReview.ts        Annual review checklist, life events, completion
+    documents.ts           Legal document kinds/stages, validation, recommended-document checklist
     funding.ts             Funding methods/states, dashboard badges, progress
     rules.ts               Rule engine + non-conclusory wording guard
     audit.ts               Append-only audit entries
@@ -126,6 +127,28 @@ selects). `src/intake/mapping.ts` turns an answer into a batch of proposed
 changes. It updates existing entities in place, such as fiduciary slots and
 beneficiary shares, so conflicts are detected rather than duplicated. It never
 fills in values the user didn't give.
+
+## Legal documents
+
+Documents are entities (`kind: "document"`) in the change pipeline. Each
+records its type, who or what it belongs to (a household, a person, or, for a
+deed, a real-estate asset), its stage (not started → attorney drafting →
+reviewed → signed), the family-reported signing date, and where the original
+is kept.
+
+- FamilyVault never stores, drafts, finalizes, or signs documents. "Signed"
+  records something that already happened with the attorney, and needs a
+  date that is not in the future.
+- Changing a document's type, owner, stage, or signing date is an important
+  fact that needs confirmation. Updating only the storage location or notes
+  is recorded immediately.
+- The location and notes fields reject text that looks like an SSN, a long
+  account or ID number, an email address, or a password.
+- Each document can be tracked once per owner. Archiving a person or
+  property that a document refers to is blocked.
+- `recommendedDocuments` builds a checklist from the grantors, minor
+  children, and deeded property. It is framed as a discussion list for the
+  attorney, not as a requirement.
 
 ## Annual review
 

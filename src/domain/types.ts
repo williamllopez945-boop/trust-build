@@ -198,10 +198,16 @@ export type PlanDocumentKind =
 export interface PlanDocument {
   id: string;
   kind: PlanDocumentKind;
+  /** Whose document this is (wills, powers of attorney, directives). */
   forPersonId?: string;
+  /** For deeds: the real-estate asset being deeded. */
+  forAssetId?: string;
   stage: DocumentStage;
+  /** Date the family reports it was signed (stage "executed"); FamilyVault never signs anything. */
+  executedOn?: ISODate;
   /** Where the original lives, never the document itself. */
   storageReference?: string;
+  notes?: string;
 }
 
 export interface DistributionRule {

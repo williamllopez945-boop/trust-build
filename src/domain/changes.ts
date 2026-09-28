@@ -15,7 +15,8 @@
  */
 import { auditEntry, type AuditEntry, type ChangeAuditDetail } from "./audit.ts";
 import { DecisionGuardError, gateFor, recordProfessionalReview, type Decision, type Reviewer, type Sensitivity } from "./decisions.ts";
-import { archiveEntity, getEntity, newId, putEntity, referencesTo, SINGLETON_KINDS, type EntityKind } from "./entities.ts";
+import { archiveEntity, assetReferences, getEntity, newId, putEntity, referencesTo, SINGLETON_KINDS, type EntityKind } from "./entities.ts";
+import { kindInfo, stageLabel, validateDocument } from "./documents.ts";
 import { TRUST_NODE_ID } from "./estateGraph.ts";
 import { RULES_VERSION } from "./rules.ts";
 import { CURRENT_SCHEMA_VERSION } from "./schema.ts";
@@ -166,6 +167,9 @@ export function sensitivityFor(kind: EntityKind, op: ChangeOp, paths: string[]):
       return has("isGrantor", "isMinor", "hasSpecialNeeds", "kind") ? "important_fact" : "factual";
     case "relationship":
       return "important_fact";
+    case "document":
+      // Where the original is kept, and notes, are simple facts; what the document is and its stage matter more.
+      return op === "update" && !has("kind", "stage", "executedOn", "forPersonId", "forAssetId") ? "factual" : "important_fact";
     case "household":
       return has("maritalStatus") ? "important_fact" : "factual";
     case "plan":
@@ -192,6 +196,10 @@ function validate(h: Household, kind: EntityKind, op: ChangeOp, entityId: string
   if (op === "archive") {
     if (kind === "person") {
       const refs = referencesTo(h, entityId);
+      if (refs.length) problems.push(`Still referenced by ${refs.join(", ")}. Archive or change those first.`);
+    }
+    if (kind === "asset") {
+      const refs = assetReferences(h, entityId);
       if (refs.length) problems.push(`Still referenced by ${refs.join(", ")}. Archive or change those first.`);
     }
     return problems;
@@ -227,6 +235,9 @@ function validate(h: Household, kind: EntityKind, op: ChangeOp, entityId: string
       for (const id of ((after.titledTo as Obj | undefined)?.value as unknown[] | null) ?? []) if (!personExists(id)) problems.push(`Unknown owner ${String(id)}.`);
       break;
     }
+    case "document":
+      problems.push(...validateDocument(h, after, entityId));
+      break;
     default:
       break;
   }
@@ -312,6 +323,11 @@ function defaultLabel(h: Household, kind: EntityKind, e: Obj, entityId: string):
     case "fiduciary": return `${String(e.role ?? "fiduciary").replace(/_/g, " ")}${Number(e.order) > 1 ? ` (alternate ${Number(e.order) - 1})` : ""}: ${name(e.personId)}`;
     case "distribution": return `${String(e.tier ?? "")} trust share for ${name(e.beneficiaryId)}`.trim();
     case "relationship": return `${name(e.to)} is ${String(e.type ?? "related")} of ${name(e.from)}`;
+    case "document": {
+      const info = kindInfo(String(e.kind));
+      const whose = e.forPersonId ? `: ${name(e.forPersonId)}` : e.forAssetId ? `: ${String(h.assets.find((a) => a.id === e.forAssetId)?.label ?? e.forAssetId)}` : "";
+      return `${info?.label ?? "Document"}${whose} (${stageLabel(String(e.stage))})`;
+    }
     case "household": return "Household details";
     case "plan": return "Trust plan details";
   }
@@ -506,12 +522,14 @@ export function queueChange(h: Household, cs: ChangeSet, now: Date = new Date())
 }
 
 /**
- * Entry point for forms: plain factual changes with no conflicts are recorded
- * immediately; everything else goes to the review queue.
+ * Entry point for forms: an invalid change is refused (nothing is queued, so
+ * the user fixes the form), plain factual changes with no conflicts are
+ * recorded immediately, and everything else goes to the review queue.
  */
 export function submitChange(h: Household, input: ChangeInput, now: Date = new Date()): { household: Household; change: ChangeSet; applied: boolean } {
   const cs = proposeChange(h, input, now);
-  if (cs.problems.length === 0 && cs.gate === "record" && cs.conflicts.length === 0 && input.provenance.actor === "user") {
+  if (cs.problems.length) return { household: h, change: cs, applied: false };
+  if (cs.gate === "record" && cs.conflicts.length === 0 && input.provenance.actor === "user") {
     const r = applyChange(h, cs, { by: "user" }, now);
     return { household: r.household, change: r.change, applied: true };
   }
